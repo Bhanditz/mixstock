@@ -116,8 +116,7 @@ this step off-line).
 Within \R, at the command prompt, type the
 following commands:
 <<eval=FALSE>>=
-bbcontrib <- "http://www.zoo.ufl.edu/bolker/R/windows"
-install.packages("mixstock",contriburl=bbcontrib)
+install.packages("mixstock")
 install.packages("plotrix")
 install.packages("coda")
 install.packages("abind")

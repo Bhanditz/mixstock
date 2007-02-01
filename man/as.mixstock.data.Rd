@@ -12,10 +12,11 @@
 }
 \usage{
 as.mixstock.data(object,nmix=1,sourcesize)
-print.mixstock.data(x,...)
 plot.mixstock.data(x,prop = TRUE, legend = TRUE, colors = rainbow(x$H), 
     leg.space = 0.3, leg.ncol = 3, mix.off = 0.5,
-stacklabels=FALSE, ...)
+    stacklabels=FALSE, ...)
+\method{print}{mixstock.data}(x,\dots)
+
 }
 \arguments{
   \item{object}{a matrix with (R+1) columns and (H) rows,

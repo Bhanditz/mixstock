@@ -10,7 +10,7 @@ mixstock.est(fit, resample = NULL, data = NULL, em = FALSE, sourcesamp =
 NULL, mixsamp = NULL, R = NULL, H = NULL, M=1, transf = "full", method =
 "unknown", boot.method = "none", boot.data = NULL, GR = NULL, prior =
 NULL)
-print.mixstock.est(x,debug=FALSE,...)
+\method{print}{mixstock.est}(x,debug=FALSE,\dots)
 }
 \arguments{
   \item{fit}{a fit object (from cml, uml, etc.)}

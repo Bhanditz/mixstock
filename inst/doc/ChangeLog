@@ -43,3 +43,11 @@ changed n.iter/n.burn/n.thin to match R2WinBUGS default
 	 abstract some of this info
       record timing info for R2WinBUGS runs
       tiny tweaks to C code to satisfy '-Wall -pedantic' flags
+
+0.8.4.1 fixed plotting bug (!)
+
+0.8.4.2 minor changes for documentation compliance with checkDocStyle,
+	codetools:::checkUsagePackage("mixstock")
+
+
+	

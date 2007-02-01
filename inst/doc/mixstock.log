@@ -1,4 +1,4 @@
-This is pdfeTeXk, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) (format=pdflatex 2006.8.20)  24 JAN 2007 13:01
+This is pdfeTeXk, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) (format=pdflatex 2006.8.20)  1 FEB 2007 22:22
 entering extended mode
  file:line:error style messages enabled.
 **\nonstopmode \input /home/ben/lib/R/pkgs/mixstock/inst/doc/mixstock.tex
@@ -275,9 +275,9 @@ File: mixstock-009.pdf Graphic file (type pdf)
 
 <use mixstock-009.pdf>
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <9> on input line 279.
+(Font)              <9> on input line 278.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 279.
+(Font)              <5> on input line 278.
  [5 <./mixstock-009.pdf>]
 <mixstock-013.pdf, id=51, 433.62pt x 433.62pt>
 File: mixstock-013.pdf Graphic file (type pdf)
@@ -286,13 +286,13 @@ File: mixstock-013.pdf Graphic file (type pdf)
 File: mixstock-016.pdf Graphic file (type pdf)
 
 <use mixstock-016.pdf>
-Overfull \hbox (52.30809pt too wide) in paragraph at lines 370--376
+Overfull \hbox (52.30809pt too wide) in paragraph at lines 369--375
 \T1/aer/m/n/10.95 plot this with a log-a-rith-mic scale for the ver-ti-cal axis
 , use \T1/aett/m/n/10.95 plot(mydata.cml,log="y")\T1/aer/m/n/10.95 ). 
  []
 
 [8] [9 <./mixstock-016.pdf>]
-Overfull \hbox (1.71133pt too wide) in paragraph at lines 413--423
+Overfull \hbox (1.71133pt too wide) in paragraph at lines 412--422
 \T1/aer/m/n/10.95 warn-ings about \T1/aett/m/n/10.95 singular matrix, returning
  equal contribs\T1/aer/m/n/10.95 , \T1/aett/m/n/10.95 Error in
  []
@@ -305,9 +305,9 @@ File: mixstock-027.pdf Graphic file (type pdf)
 
 <use mixstock-027.pdf>
 LaTeX Font Info:    Font shape `TS1/aer/m/n' in size <10.95> not available
-(Font)              Font shape `TS1/cmr/m/n' tried instead on input line 527.
+(Font)              Font shape `TS1/cmr/m/n' tried instead on input line 526.
 
-Overfull \hbox (3.51389pt too wide) in paragraph at lines 527--539
+Overfull \hbox (3.51389pt too wide) in paragraph at lines 526--538
 [][]\T1/aett/m/n/10.95 diag1$current \T1/aer/m/n/10.95 gives the di-ag-nos-tics
  for the last chain eval-u-ated. These
  []
@@ -317,19 +317,19 @@ Overfull \hbox (3.51389pt too wide) in paragraph at lines 527--539
 File: mixstock-034.pdf Graphic file (type pdf)
  <use mixstock-034.pdf> [15]
 [16 <./mixstock-034.pdf>]
-Overfull \hbox (1.59793pt too wide) in paragraph at lines 670--679
+Overfull \hbox (1.59793pt too wide) in paragraph at lines 669--678
 \T1/aett/m/n/10.95 "random" \T1/aer/m/n/10.95 starts the chains from ran-dom st
 art-ing points. If \T1/aett/m/n/10.95 which.init
  []
 
 
-Overfull \hbox (100.76492pt too wide) in paragraph at lines 670--679
+Overfull \hbox (100.76492pt too wide) in paragraph at lines 669--678
 \T1/aer/m/n/10.95 for ex-am-ple, \T1/aett/m/n/10.95 mm.wbugs(...,n.chains=3,ini
 ttype="dispersed",which.init=c(1,5,7))
  []
 
 
-Overfull \hbox (20.9157pt too wide) in paragraph at lines 679--690
+Overfull \hbox (20.9157pt too wide) in paragraph at lines 678--689
 \T1/aett/m/n/10.95 returntype="bugs" \T1/aer/m/n/10.95 and us-ing \T1/aett/m/n/
 10.95 as.mcmc.bugs \T1/aer/m/n/10.95 and \T1/aett/m/n/10.95 as.mixstock.est.bug
 s
@@ -342,13 +342,13 @@ File: mixstock-041.pdf Graphic file (type pdf)
 File: mixstock-042.pdf Graphic file (type pdf)
  <use mixstock-042.pdf> [18 <./mixstock-041.pdf>] [19 <./mixstock-042.pdf>] [20
 ] [21] [22]
-Overfull \hbox (50.9258pt too wide) in paragraph at lines 888--891
+Overfull \hbox (50.9258pt too wide) in paragraph at lines 887--890
 []\T1/aer/m/n/10.95 read.csv/read.table + as.mixstock.data com-bined into a sin
 -gle read.mixstock.data
  []
 
 
-Overfull \hbox (29.70444pt too wide) in paragraph at lines 902--904
+Overfull \hbox (29.70444pt too wide) in paragraph at lines 901--903
 []\T1/aer/m/n/10.95 plot(...,legend=TRUE) doesn't work for CML. add un-stacked/
 beside=TRUE
  []
@@ -379,4 +379,4 @@ luesky/cm/cmtt10.pfb></usr/share/texmf-tetex/fonts/type1/bluesky/cm/cmr10.pfb><
 /usr/share/texmf-tetex/fonts/type1/bluesky/cm/cmbx12.pfb></usr/share/texmf-tete
 x/fonts/type1/bluesky/cm/cmr12.pfb></usr/share/texmf-tetex/fonts/type1/bluesky/
 cm/cmtt12.pfb></usr/share/texmf-tetex/fonts/type1/bluesky/cm/cmr17.pfb>
-Output written on mixstock.pdf (24 pages, 219376 bytes).
+Output written on mixstock.pdf (24 pages, 219431 bytes).

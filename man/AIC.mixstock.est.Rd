@@ -21,7 +21,7 @@ logLik.mixstock.est(object,...)
 confint.mixstock.est(object,parm,level=0.95,profile=FALSE,
 type=c("quantile","credible"),
 show.sourcectr=TRUE,show.haps=FALSE,...)
-summary.mixstock.est(object,...)
+\method{summary}{mixstock.est}(object,\dots)
 }
 \arguments{
   \item{object}{mixed stock analysis estimate}

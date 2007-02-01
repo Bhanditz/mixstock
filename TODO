@@ -1,4 +1,6 @@
-- revise plots
+
+
+- add flexibility to MM plots
 - work on package vignette
 - clean up/fix CML estimates; test UML estimates further (??)
 - establish testing directory, regression tests
