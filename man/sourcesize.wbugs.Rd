@@ -2,14 +2,14 @@
 \alias{sourcesize.wbugs}
 \title{Run hierarchical model with via WinBUGS}
 \description{
-  Sets up the source-size model and passes it to WinBUGS via R2WinBUGS}
+  Sets up the source-size model and passes it to WinBUGS via R2WinBUGS
 }
 \usage{
 sourcesize.wbugs(x,
 n.iter=20000,  n.burnin=floor(n.iter/2),
 n.chains=x$R,
 n.thin=max(1, floor(n.chains * (n.iter - n.burnin)/1000)),
-useWINE, WINE = Sys.getenv("WINE"),...)
+...)
 }
 \arguments{
   \item{x}{a mixstock data object}
@@ -21,9 +21,6 @@ useWINE, WINE = Sys.getenv("WINE"),...)
     Default is 'max(1, floor(n.chains * (n.iter-n.burnin) /
     1000))' which will only thin if there are at least 2000
     simulations.}
-  \item{useWINE}{run WinBUGS via WINE on Linux?  Default is TRUE if WINE
-    environment variable is set}
-  \item{WINE}{location of WINE binary on Linux}
   \item{\dots}{other arguments to \code{bugs}}
 }
 \value{

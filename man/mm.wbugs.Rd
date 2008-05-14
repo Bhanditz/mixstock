@@ -4,15 +4,15 @@
 \title{Run many-to-many model via WinBUGS}
 \description{
   Sets up the many-to-many model and passes it to WinBUGS via R2WinBUGS}
-}
 \usage{
 mm.wbugs(x, sourcesize,
 n.iter=20000,  n.burnin=floor(n.iter/2),
 n.chains=x$R,
 n.thin=max(1, floor(n.chains * (n.iter - n.burnin)/1000)),
-useWINE, WINE = Sys.getenv("WINE"), WINEPATH="", files.only = FALSE,
+files.only = FALSE,
 inittype=c("dispersed","random"),bugs.code=c("TO","BB"),
                      returntype=c("mixstock","coda","bugs"),
+mixprior=1,
 which.init,
 debug=FALSE,...)
 write.TO.bugscode(fn,MIX)
@@ -28,10 +28,6 @@ write.TO.bugscode(fn,MIX)
     Default is 'max(1, floor(n.chains * (n.iter-n.burnin) /
     1000))' which will only thin if there are at least 2000
     simulations.}
-  \item{useWINE}{run WinBUGS via WINE on Linux?  Default is TRUE if WINE
-    environment variable is set}
-  \item{WINE}{location of WINE binary on Linux}
-  \item{WINEPATH}{WINE directory on Linux}
   \item{files.only}{(unimplemented) don't run WinBUGS, just produce
     input files}
   \item{inittype}{"dispersed" or "random" depending on how you
@@ -39,6 +35,10 @@ write.TO.bugscode(fn,MIX)
   \item{bugs.code}{"TO" or "BB" depending on whether you
     want old-style (Toshi Okuyama=TO) or more compact but
     possibly slower (Ben Bolker=BB) code}
+  \item{mixprior}{Dirichlet prior for contributions to mixed
+    stocks.  Should be either a vector of length (nmix+1) --
+    one extra for the unknown stock -- or a single numeric value
+    which will be replicated}
   \item{which.init}{for "dispersed" start with fewer chains than
     sources, which sources should be used as the dominant sources
     in the chains? (default is a random sample without replacement from

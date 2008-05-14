@@ -63,8 +63,9 @@ model{
       theta[j,i] <- DERIV[j,i]/sum(DERIV[j,])
     }
   }
+## now set as data
 ## set mixed pop. prior
-  for(i in 1:(MIX+1)){
-    dp[i] <- 1
-  }
+##  for(i in 1:(MIX+1)){
+##    dp[i] <- 1
+##  }
 }

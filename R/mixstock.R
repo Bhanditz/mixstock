@@ -126,7 +126,13 @@ marknames <- function(x) {
 }
 
 mixnames <- function(x) {
-  if (is.null(x$mixsamp)) NULL else dimnames(x$mixsamp)[[2]]
+  m = if (is.null(x$mixsamp)) NULL else dimnames(x$mixsamp)[[2]]
+  if (length(m)==0) m="Mixed"
+  m
+}
+
+locnames <- function(x) {
+  c(sourcenames(x),mixnames(x))
 }
 
 as.mixstock.est <- function(object) {
@@ -250,19 +256,24 @@ summary.mixstock.est <- function(object,...) {
 }
 
 plot.mixstock.data <- function(x,prop=TRUE,legend=TRUE,
-                             colors=rainbow(x$H),leg.space=0.3,
-                             leg.ncol=3,mix.off=0.5,
-                             stacklabels=FALSE,
-                             ...) {
+                               colors=rainbow(x$H),
+                               leg.space=0.3,
+                               leg.ncol,leg.cex=1,
+                               mix.off=0.5,
+                               stacklabels=FALSE,
+                               sampsize=FALSE,
+                               horiz=TRUE,
+                               ...) {
   ## H <- nrow(x$sourcesamp)
   R <- ncol(x$sourcesamp)
+  ## combine all values into a single matrix
   vals <- cbind(as.matrix(x$sourcesamp),x$mixsamp)
-  if (!is.matrix(x$mixsamp)) {
+  ssize = colSums(vals)
+  if (length(dim(x$mixsamp))<2) {  ## not matrix or data frame
     dimnames(vals)[[2]][R+1] <- "Mixed"
     M <- 1
   } else M <- ncol(x$mixsamp)
-  marknames <- rownames(vals)
-  if (prop) vals <- sweep(vals,2,colSums(vals),"/")
+  if (prop) vals <- sweep(vals,2,ssize,"/")
   if (!legend) leg.space <- 0
   y.ht <- 1/(1-leg.space)
   leg.bot <- 1.1
@@ -270,15 +281,35 @@ plot.mixstock.data <- function(x,prop=TRUE,legend=TRUE,
     y.ht <- y.ht*max(vals)
     leg.bot <- leg.bot*max(vals)
   }
-  b <- barplot(vals,ylim=c(0,y.ht),axes=FALSE,col=colors,
-               space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),names.arg=rep("",R+M),...)
+  if (horiz) {
+    op <- par(las=1)
+    on.exit(par(op))
+    b <- barplot(as.matrix(vals),xlim=c(0,y.ht),axes=FALSE,col=colors,
+                 space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),
+                 horiz=TRUE,
+                 names.arg=rep("",R+M),...)
+  } else {
+    b <- barplot(as.matrix(vals),ylim=c(0,y.ht),axes=FALSE,col=colors,
+                 space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),
+                 horiz=FALSE,
+                 names.arg=rep("",R+M),...)
+  }
+  b.axis = if (horiz) 2 else 1
+  f.axis = if (horiz) 1 else 2
   if (stacklabels) {
-    staxlab(side=1,at=b,labels=dimnames(vals)[[2]])
-  } else mtext(side=1,line=par("mgp")[2],at=b,dimnames(vals)[[2]])
-  axis(side=2,at=seq(0,1,by=0.2))
+    staxlab(side=b.axis,at=b,labels=locnames(x))
+  } else mtext(side=b.axis,line=par("mgp")[2],at=b,locnames(x))
+  axis(side=f.axis,at=seq(0,1,by=0.2))
+  if (missing(leg.ncol)) {
+    leg.ncol <- if (horiz) 1 else 3
+  }
   if (legend) {
-    legend(par("usr")[1:2],c(1.1,y.ht),
-           marknames,fill=colors,ncol=leg.ncol)
+    legend(if (!horiz) "topleft" else "right",
+           marknames(x),fill=colors,ncol=leg.ncol,cex=leg.cex)
+  }
+  if (sampsize) {
+    mtext(side = if (!horiz) 3 else 4,         
+          at=b,line=1,ssize)
   }
 }
 
@@ -288,6 +319,12 @@ plot.mixstock.est <- function(x,
                               contrib.lab="Estimated source contributions",
                               sourcefreq.lab="Estimated source marker freqs",
                               markcolors=rainbow(x$H),
+                              alength=0.25,
+                              aunits="inches",
+                              abbrev,
+                              ## scales=list(),
+                              ## lattice.args=list(),
+                              ## layout=NULL,
                               ...) {
   mm <- nmix(x)>1
   if (mm) {
@@ -299,29 +336,40 @@ plot.mixstock.est <- function(x,
     nr <- nsource(x)
     ## little bit of a kluge to work with lattice --
     ##  has to repeat functionality from confint()
+    if (!missing(abbrev)) {
+        if (is.logical(abbrev)) {
+          if (abbrev) abbn <- 3
+        } else {
+          abbn <- abbrev
+          abbrev <- TRUE
+        }
+      } else abbrev <- FALSE
+
     if (!sourcectr) {
+      if (abbrev) rnames <- abbreviate(rnames,abbn)
       ld2 <- data.frame(x=c(x$resamplist$theta),
                         mix=factor(rep(rep(mnames,nr),each=nx)),
                         source=factor(rep(rnames,each=nm*nx)))
       f <- formula(x~source|mix)
     } else {
       mnames <- c(mnames,"Unk")
+      if (abbrev) mnames <- abbreviate(mnames,abbn)
       ld2 <- data.frame(x=c(x$resamplist$div),
                         source=factor(rep(rep(rnames,nm+1),each=nx)),
                         mix=factor(rep(mnames,each=nr*nx)))
       f <- formula(x~mix|source)
     }
-    bwplot(f,data=ld2,
-           ylab="Contribution",...,
-           panel=function(x,y,...) {
-             L <- split(y,x)
-             xvec <- 1:length(L)
-             m <- sapply(L,mean)
-             ci <- sapply(L,quantile,c(0.025,0.975))
-             lpoints(xvec,m,pch=16)
-             larrows(xvec,m,xvec,ci[1,],angle=90)
-             larrows(xvec,m,xvec,ci[2,],angle=90)
-           })
+    cipanel <- function(x,y,...) {
+      L <- split(y,x)
+      xvec <- 1:length(L)
+      m <- sapply(L,mean)
+      ci <- sapply(L,quantile,c(0.025,0.975))
+      lpoints(xvec,m,pch=16)
+      larrows(xvec,m,xvec,ci[1,],angle=90,length=alength,units=aunits,)
+      larrows(xvec,m,xvec,ci[2,],angle=90,length=alength,units=aunits)
+    }
+    bwplot(f,data=ld2,ylab="Contribution",
+           panel=cipanel,...)
   } else {
     if (x$method=="mcmc")
       vals <- x$fit
@@ -1821,12 +1869,9 @@ pm.wbugs <- function(x,
                      n.iter=20000,n.burnin=floor(n.iter/2),
                      n.chains=x$R,
                      n.thin=max(1,floor(n.chains*(n.iter-n.burnin)/1000)),
-                     useWINE,WINE=Sys.getenv("WINE"),WINEPATH="",...) {
+                     ...) {
   pm.bugscode <- system.file(package = "mixstock", "bugs", "pellamasuda.bug")
   require("R2WinBUGS")
-  if (missing(useWINE)) {
-    useWINE <- length(WINE)>0
-  }
   ## variables repeated at end of line are codetools kluges
   sourcesamp <- t(x$sourcesamp); sourcesamp
   mixsamp <- expand.bugs.data(x$mixsamp); mixsamp
@@ -1854,8 +1899,7 @@ pm.wbugs <- function(x,
   ## convert from tmcmc to BUGS defaults
   b1 = bugs(data,inits,parameters,model.file=pm.bugscode,
     n.chains=R,n.iter=n.iter,
-    n.burnin=n.burnin,n.thin=n.thin,
-    useWINE=useWINE,WINE=WINE,WINEPATH=WINEPATH,...)
+    n.burnin=n.burnin,n.thin=n.thin,...)
   b1
 }
 
@@ -1900,8 +1944,8 @@ write.TO.bugscode = function(fn,MIX) {
     "      theta[j,i] <- DERIV[j,i]/sum(DERIV[j,])",
     "   }",
     "}",
-    "",
-    "for(i in 1:(MIX+1)){dp[i] <- 1}")
+    "")
+##    "for(i in 1:(MIX+1)){dp[i] <- 1}")  ## now set as data
   cat(block3,file=fn,append=TRUE,sep="\n")
   cat("}",file=fn,append=TRUE,sep="\n")
 }
@@ -1911,16 +1955,13 @@ mm.wbugs <- function(x,
                      n.iter=20000,n.burnin=floor(n.iter/2),
                      n.chains=x$R,
                      n.thin=max(1,floor(n.chains*(n.iter-n.burnin)/1000)),
-                     useWINE,WINE=Sys.getenv("WINE"),WINEPATH="",
                      files.only=FALSE,
                      inittype=c("dispersed","random"),
                      bugs.code=c("TO","BB"),
                      returntype=c("mixstock","coda","bugs"),
+                     mixprior=1,
                      which.init,debug=FALSE,...) {
   require("R2WinBUGS")
-  if (missing(useWINE)) {
-    useWINE <- nchar(WINE)>0
-  }
   inittype <- match.arg(inittype)
   returntype <- match.arg(returntype)
   bugs.code <- match.arg(bugs.code)
@@ -1942,7 +1983,7 @@ mm.wbugs <- function(x,
     mixsamp ## codetools kluge
   }
   ## n.chains <- R
-  harm.n <- sqrt(1/mean(1/apply(sourcesamp, 2, sum)))
+  harm.n <- sqrt(1/mean(1/colSums(sourcesamp)))
   beta <- p.bayes(sourcesamp)
   a <- beta/harm.n
   ybar <- colMeans(normcols(sourcesamp))
@@ -1955,8 +1996,11 @@ mm.wbugs <- function(x,
   T <- rowSums(sourcesamp); T ## codetools kluge
   Tm <- colSums(x$mixsamp)
   fp <- sourceprior[1,]  ## haplotype freq prior
-  fp ## codetools kluge
-  data <- c(list("Tm","sourcesamp","sourcesize","R","H","MIX","fp"),mixsamplist)
+  dp <- mixprior
+  dp <- rep(dp,length.out=MIX+1) ## replicate mixed prior if necessary
+  c(fp,dp) ## codetools kluge
+  data <- c(list("Tm","sourcesamp","sourcesize","R","H","MIX","fp","dp"),
+            mixsamplist)
   parameters <- c("theta","div")
   ## initial values:
   if (inittype=="random") {
@@ -1998,9 +2042,11 @@ mm.wbugs <- function(x,
       ## pi = t(sourceprop.obs),
       ## TO DO: try adjusting hap freq start, or using one or the other
   } ## inittype != random
-  elapsed <- system.time(b1 <- bugs(data,inits,parameters,mm.bugscode,n.chains=n.chains,
-             n.iter=n.iter,n.burnin=n.burnin, n.thin=n.thin,useWINE=useWINE,
-             WINE=WINE,newWINE=TRUE,WINEPATH=WINEPATH,debug=debug,...))[3]
+  elapsed <- system.time(b1 <- bugs(data,inits,parameters,mm.bugscode,
+                                    n.chains=n.chains,
+                                    n.iter=n.iter,n.burnin=n.burnin,
+                                    n.thin=n.thin,
+                                    debug=debug,...))[3]
   return(switch(returntype,
                 mixstock=as.mixstock.est.bugs(b1,data=x,time=elapsed),
                 coda=as.mcmc.bugs(b1),
@@ -2012,7 +2058,7 @@ sourcesize.wbugs <- function(x,
                              n.iter=20000,n.burnin=floor(n.iter/2),
                              n.chains=x$R,
                              n.thin=max(1,floor(n.chains*(n.iter-n.burnin)/1000)),
-                             useWINE, WINE = Sys.getenv("WINE"), ...) {
+                             ...) {
   stop("stub")
   ## sourcesize.bugscode <- system.file(package = "mixstock", "bugs", "sourcesize.bug")
 }

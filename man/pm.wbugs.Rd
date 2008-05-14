@@ -3,13 +3,12 @@
 \title{Run Pella-Masuda model via WinBUGS}
 \description{
   Sets up the Pella-Masuda model and passes it to WinBUGS via R2WinBUGS}
-}
 \usage{
 pm.wbugs(x,
 n.iter=20000,  n.burnin=floor(n.iter/2),
 n.chains=x$R,
 n.thin=max(1, floor(n.chains * (n.iter - n.burnin)/1000)),
-useWINE, WINE = Sys.getenv("WINE"), WINEPATH="",...)
+...)
 }
 \arguments{
   \item{x}{a mixstock data object}
@@ -21,10 +20,6 @@ useWINE, WINE = Sys.getenv("WINE"), WINEPATH="",...)
     Default is 'max(1, floor(n.chains * (n.iter-n.burnin) /
     1000))' which will only thin if there are at least 2000
     simulations.}
-  \item{useWINE}{run WinBUGS via WINE on Linux?  Default is TRUE if WINE
-    environment variable is set}
-  \item{WINE}{location of WINE binary on Linux}
-  \item{WINEPATH}{WINE directory on Linux}
   \item{\dots}{other arguments to \code{bugs}}
 }
 \value{

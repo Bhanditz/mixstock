@@ -64,7 +64,7 @@ model{
     }
   }
 ## set mixed pop. prior
-  for(i in 1:(MIX+1)){
-    dp[i] <- 1
-  }
+##  for(i in 1:(MIX+1)){
+##    dp[i] <- 1
+##  }
 }

@@ -2,6 +2,7 @@
 \alias{marknames}
 \alias{sourcenames}
 \alias{mixnames}
+\alias{locnames}
 \alias{mixstock.dimnames}
 \alias{label.mixstock.data}
 \title{Extract/assign names from mixed stock data}
@@ -13,6 +14,7 @@
 marknames(x)
 sourcenames(x)
 mixnames(x)
+locnames(x)
 mixstock.dimnames(H,R)
 label.mixstock.data(x,sourcenames=NULL,marknames=NULL,mixnames=NULL)
 }
@@ -29,6 +31,7 @@ label.mixstock.data(x,sourcenames=NULL,marknames=NULL,mixnames=NULL)
   for sources.  label.mixstock.data assigns names to the data if
   the source or mixed components of the data set already have
   names, or use the same rules as mixstock.dimnames.
+  \code{locnames} gives a combined vector of source and mixed stock names.
 }
 \value{
   character vectors of names, or a list with marker and source names
