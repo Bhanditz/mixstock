@@ -1,4 +1,28 @@
-.First.lib <- function(lib,pkg) {
+head	1.1;
+access;
+symbols;
+locks
+	ben:1.1; strict;
+comment	@# @;
+
+
+1.1
+date	2006.12.31.20.18.00;	author ben;	state Exp;
+branches;
+next	;
+
+
+desc
+@mixed stock analysis: main R routines
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@.First.lib <- function(lib,pkg) {
   library.dynam("mixstock",pkg,lib)
 }
 
@@ -31,10 +55,10 @@ addlabels.barplot <- function(x,vals,names,min=0.1,cols=par("fg"),
 
 blockdiag <- function(...) {
   args <- list(...)
+  nr <- sapply(args,nrow)
   nc <- sapply(args,ncol)
   cumnc <- cumsum(nc)
-  ##  nr <- sapply(args,nrow)
-  ## NR <- sum(nr)
+  NR <- sum(nr)
   NC <- sum(nc)
   rowfun <- function(m,zbefore,zafter) {
     cbind(matrix(0,ncol=zbefore,nrow=nrow(m)),m,
@@ -45,7 +69,8 @@ blockdiag <- function(...) {
     ret <- rbind(ret,rowfun(args[[i]],cumnc[i-1],NC-cumnc[i]))
   }
   ret
-}  
+}
+    
 
 rdirichlet<-function(n,alpha)
   ## pick n random deviates from the Dirichlet function with shape parameters a
@@ -65,7 +90,7 @@ logLik.toptim <- function(object,...) {
   -object$val
 }
 
-mixstock.data <- function(sourcesamp,mixsamp,nsource,nmix,sourcesize) {
+mixstock.data <- function(sourcesamp,mixsamp,nsource,nmix) {
   if (missing(mixsamp) && (!missing(nsource) | !missing(nmix))) {
     if (!missing(nsource)) nmix <- ncol(sourcesamp)-nsource else
     if (!missing(nmix)) nsource <- ncol(sourcesamp)-nmix else
@@ -79,35 +104,25 @@ mixstock.data <- function(sourcesamp,mixsamp,nsource,nmix,sourcesize) {
   result$H <- nrow(sourcesamp)
   result$sourcesamp <- sourcesamp
   result$mixsamp <- mixsamp
-  if (!missing(sourcesize)) result$sourcesize <- sourcesize
   class(result) <- "mixstock.data"
   result
 }
 
-as.mixstock.data <- function(object,nmix=1,sourcesize) {
+as.mixstock.data <- function(object,nmix=1) {
   result <- list()
   if (is.data.frame(object) || is.matrix(object)) {
     ## data frame/matrix, convert to list
     result$R <- ncol(object)-nmix
-    result$M <- nmix
-    if (!missing(sourcesize)) {
-      if (is.numeric(sourcesize)) {
-        result$sourcesize <- result$sourcesize
-      } else if (is.character(sourcesize)) {
-        sourcesizerow <- switch(sourcesize,first=1,last=nrow(sourcesize))
-        sourcesize <- object[sourcesizerow,1:result$R]
-        object <- object[-sourcesizerow,]
-      }
-    }
     result$H <- nrow(object)
+    result$M <- nmix
     result$sourcesamp <- object[,1:result$R]
     result$mixsamp <- object[,(result$R+1):ncol(object)]
   } else {
     result <- object
     if (is.null(object$R))
       result$R <- ncol(object$sourcesamp)
-    if (is.null(object$H))
-      result$H <- nrow(object$sourcesamp)
+  if (is.null(object$H))
+    result$H <- nrow(object$sourcesamp)
   }
   result <- label.mixstock.data(result,
                                 sourcenames=sourcenames(result),
@@ -126,13 +141,7 @@ marknames <- function(x) {
 }
 
 mixnames <- function(x) {
-  m = if (is.null(x$mixsamp)) NULL else dimnames(x$mixsamp)[[2]]
-  if (length(m)==0) m="Mixed"
-  m
-}
-
-locnames <- function(x) {
-  c(sourcenames(x),mixnames(x))
+  if (is.null(x$mixsamp)) NULL else dimnames(x$mixsamp)[[2]]
 }
 
 as.mixstock.est <- function(object) {
@@ -141,7 +150,7 @@ as.mixstock.est <- function(object) {
 }
 
 mixstock.est <- function(fit,resample=NULL,data=NULL,em=FALSE,
-                       sourcesamp=NULL,mixsamp=NULL,R=NULL,H=NULL,M=1,
+                       sourcesamp=NULL,mixsamp=NULL,R=NULL,H=NULL,
                        transf="full",method="unknown",
                        boot.method="none",
                        boot.data=NULL,GR=NULL,prior=NULL) {
@@ -159,10 +168,8 @@ mixstock.est <- function(fit,resample=NULL,data=NULL,em=FALSE,
       H <- nrow(sourcesamp)
     }
   object <- list(fit=fit,resample=resample,
-                 ## used only for one-to-many analyses
-                 data=list(sourcesamp=sourcesamp,mixsamp=mixsamp,R=R,H=H,M=1),
-                 R=R,H=H,M=1,
-                 transf=transf,method=method,boot.method=boot.method,
+                 data=list(sourcesamp=sourcesamp,mixsamp=mixsamp,R=R,H=H),
+                 R=R,H=H,transf=transf,method=method,boot.method=boot.method,
                  boot.data=boot.data,GR.diag=GR,prior=prior,
                  em=em)
   class(object) <- "mixstock.est"
@@ -200,11 +207,7 @@ print.mixstock.est <- function(x,debug=FALSE,...) {
   }
   cat("Estimated input contributions:\n")
   print(vals$input.freq)
-  if (!is.null(vals$sourcectr.freq)) {
-    cat("\nEstimated input contributions (source-centric):\n")
-    print(vals$sourcectr.freq)
-  }
-  cat("\nEstimated marker frequencies in sources:\n")
+  cat("\nEstimated source frequencies:\n")
   if (x$method != "cml")
     print(vals$source.freq)
   else cat("(cml: no estimate)\n")
@@ -222,169 +225,75 @@ coef.mixstock.est <- function(object,...) {
 }
 
 summary.mixstock.est <- function(object,...) {
-  if (is.null(object$data)) {
-    cat("No data stored\n")
-  } else {
-    print.mixstock.data(object$data)
-  }
-  ## print.mixstock.est(object)
-  ## if (!is.null(object$resample)) {
-  ## cat("\nResampling method:",object$boot.method,"\n")
-  ## print(summary(object$resample))
-  ##  }
-  cobj <- confint(object)
-  fit <- object$fit[!sapply(object$fit,is.null)] ## drop NULLs
-  all <- cbind(unlist(lapply(fit,t)),cobj)
-  rownames(all) <- rownames(cobj)
-  cat("\nEstimates:\n")
-  nm <- nmix(object)
-  ns <- nsource(object)
-  ## nh <- nmark(object)
-  mm <- (nm>1)
-  if (mm)
-    cat("\nMixed-stock-centric:\n")
-  print(all[1:(nm*ns),])
-  if (mm) {
-    cat("\nSource-centric:\n")
-    print(all[(nm*ns+1):(nm*ns+(nm+1)*ns),])
-  }
-  if (!mm & nrow(all)>(nm*ns)) {
-    cat("\nSource marker frequency estimates:\n")
-    print(all[-(1:(nm*ns+1)),])
+  if (is.null(object$data)) cat("No data stored\n") else print.mixstock.data(object$data)
+  print.mixstock.est(object)
+  if (!is.null(object$resample)) {
+    cat("\nResampling method:",object$boot.method,"\n")
+    print(summary(object$resample))
   }
   invisible(list(data=object$data,fit=object$fit,resample.sum=mysum(object$resample)))
 }
 
 plot.mixstock.data <- function(x,prop=TRUE,legend=TRUE,
-                               colors=rainbow(x$H),
-                               leg.space=0.3,
-                               leg.ncol,leg.cex=1,
-                               mix.off=0.5,
-                               stacklabels=FALSE,
-                               sampsize=FALSE,
-                               horiz=TRUE,
-                               ...) {
-  ## H <- nrow(x$sourcesamp)
+                             colors=rainbow(x$H),leg.space=0.3,
+                             leg.ncol=3,mix.off=0.5,
+                             stacklabels=FALSE,
+                             ...) {
+  H <- nrow(x$sourcesamp)
   R <- ncol(x$sourcesamp)
-  ## combine all values into a single matrix
   vals <- cbind(as.matrix(x$sourcesamp),x$mixsamp)
-  ssize = colSums(vals)
-  if (length(dim(x$mixsamp))<2) {  ## not matrix or data frame
+  if (!is.matrix(x$mixsamp)) {
     dimnames(vals)[[2]][R+1] <- "Mixed"
     M <- 1
   } else M <- ncol(x$mixsamp)
-  if (prop) vals <- sweep(vals,2,ssize,"/")
-  if (legend) {
-    if (horiz) {
-      layout(matrix(1:2,nrow=1,ncol=2),width=c(1,leg.space))
-    } else {
-      layout(matrix(2:1,nrow=2,ncol=1),height=c(leg.space,1))
-    }
-    ## if (!legend) leg.space <- 0
-    ## y.ht <- 1/(1-leg.space)
-    ## leg.bot <- 1.1
-    ## if (!prop) {
-    ## y.ht <- y.ht*max(vals)
-    ## leg.bot <- leg.bot*max(vals)
+  marknames <- rownames(vals)
+  if (prop) vals <- sweep(vals,2,colSums(vals),"/")
+  if (!legend) leg.space <- 0
+  y.ht <- 1/(1-leg.space)
+  leg.bot <- 1.1
+  if (!prop) {
+    y.ht <- y.ht*max(vals)
+    leg.bot <- leg.bot*max(vals)
   }
-  if (horiz) {
-    op <- par(las=1)
-    on.exit(par(op))
-    b <- barplot(as.matrix(vals), ## xlim=c(0,y.ht),
-                 axes=FALSE,col=colors,
-                 space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),
-                 horiz=TRUE,
-                 names.arg=rep("",R+M),...)
-  } else {
-    b <- barplot(as.matrix(vals), ## ylim=c(0,y.ht),
-                 axes=FALSE,col=colors,
-                 space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),
-                 horiz=FALSE,
-                 names.arg=rep("",R+M),...)
-  }
-  b.axis = if (horiz) 2 else 1
-  f.axis = if (horiz) 1 else 2
+  b <- barplot(vals,ylim=c(0,y.ht),axes=FALSE,col=colors,
+               space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),names.arg=rep("",R+M),...)
   if (stacklabels) {
-    staxlab(side=b.axis,at=b,labels=locnames(x))
-  } else mtext(side=b.axis,line=par("mgp")[2],at=b,locnames(x))
-  axis(side=f.axis,at=seq(0,1,by=0.2))
-  if (missing(leg.ncol)) {
-    leg.ncol <- if (horiz) 1 else 3
-  }
-  if (sampsize) {
-    mtext(side = if (!horiz) 3 else 4,         
-          at=b,line=1,ssize)
-  }
+    staxlab(side=1,at=b,labels=dimnames(vals)[[2]])
+  } else mtext(side=1,line=par("mgp")[2],at=b,dimnames(vals)[[2]])
+  axis(side=2,at=seq(0,1,by=0.2))
   if (legend) {
-    op <- par(xpd=NA,mar=rep(0,4),xaxs="i",yaxs="i")
-    on.exit(par(op))
-    plot(0:1,0:1,type="n",ann=FALSE,axes=FALSE)
-    L=legend(0:1,0:1, ## if (!horiz) "topleft" else "right",
-           marknames(x),fill=colors,ncol=leg.ncol,cex=leg.cex,
-      bty="n")
-    if ((horiz && any(L$text$x+strwidth(marknames(x))>1)) ||
-        (!horiz && any(L$text$y-strheight(marknames(x))<0)))
-      warning("some legend text may be truncated: increase leg.space?")
+    legend(par("usr")[1:2],c(1.1,y.ht),
+           marknames,fill=colors,ncol=leg.ncol)
   }
 }
 
 plot.mixstock.est <- function(x,
-                              plot.freqs=FALSE,
-                              sourcectr=FALSE,
-                              contrib.lab="Estimated source contributions",
-                              sourcefreq.lab="Estimated source marker freqs",
-                              markcolors=rainbow(x$H),
-                              alength=0.25,
-                              aunits="inches",
-                              abbrev,
-                              ## scales=list(),
-                              ## lattice.args=list(),
-                              ## layout=NULL,
-                              ...) {
-  mm <- nmix(x)>1
-  if (mm) {
-    require("lattice")
-    rnames <- colnames(x$fit$input.freq)
-    mnames <- rownames(x$fit$input.freq)
-    nx <- dim(x$resamplist$theta)[1]
-    nm <- nmix(x)
-    nr <- nsource(x)
-    ## little bit of a kluge to work with lattice --
-    ##  has to repeat functionality from confint()
-    if (!missing(abbrev)) {
-        if (is.logical(abbrev)) {
-          if (abbrev) abbn <- 3
-        } else {
-          abbn <- abbrev
-          abbrev <- TRUE
-        }
-      } else abbrev <- FALSE
-
-    if (!sourcectr) {
-      if (abbrev) rnames <- abbreviate(rnames,abbn)
-      ld2 <- data.frame(x=c(x$resamplist$theta),
-                        mix=factor(rep(rep(mnames,nr),each=nx)),
-                        source=factor(rep(rnames,each=nm*nx)))
-      f <- formula(x~source|mix)
-    } else {
-      mnames <- c(mnames,"Unk")
-      if (abbrev) mnames <- abbreviate(mnames,abbn)
-      ld2 <- data.frame(x=c(x$resamplist$div),
-                        source=factor(rep(rep(rnames,nm+1),each=nx)),
-                        mix=factor(rep(mnames,each=nr*nx)))
-      f <- formula(x~mix|source)
-    }
-    cipanel <- function(x,y,...) {
-      L <- split(y,x)
-      xvec <- 1:length(L)
-      m <- sapply(L,mean)
-      ci <- sapply(L,quantile,c(0.025,0.975))
-      lpoints(xvec,m,pch=16)
-      larrows(xvec,m,xvec,ci[1,],angle=90,length=alength,units=aunits,)
-      larrows(xvec,m,xvec,ci[2,],angle=90,length=alength,units=aunits)
-    }
-    bwplot(f,data=ld2,ylab="Contribution",
-           panel=cipanel,...)
+                            plot.freqs=FALSE,
+                            contrib.lab="Estimated source contributions",
+                            sourcefreq.lab="Estimated source marker freqs",
+                            markcolors=rainbow(x$H),
+                            ...) {
+  if (is.matrix(x$data$mixsamp)) {
+    require(lattice)
+    rnames <- rownames(x$fit$input.freq)
+    mnames <- colnames(x$fit$input.freq)
+    nx <- nrow(x$resample)
+    nr <- dim(x$resample)[2]
+    nm <- dim(x$resample)[3]
+    ld2 <- data.frame(x=c(x$resample),
+                      source=factor(rep(rep(rnames,nm),each=nx)),
+                      mix=factor(rep(mnames,each=nr*nx)))
+    bwplot(x~source|mix,data=ld2,layout=c(3,1),
+           ylab="Contribution",
+           panel=function(x,y,...) {
+             L <- split(y,x)
+             xvec <- 1:length(L)
+             m <- sapply(L,mean)
+             ci <- sapply(L,quantile,c(0.025,0.975))
+             lpoints(xvec,m,pch=16)
+             larrows(xvec,m,xvec,ci[1,],angle=90)
+             larrows(xvec,m,xvec,ci[2,],angle=90)
+           })
   } else {
     if (x$method=="mcmc")
       vals <- x$fit
@@ -395,7 +304,7 @@ plot.mixstock.est <- function(x,
     if (is.null(ci)) {
       plot(1:x$R,ifreq,axes=FALSE,xlab="Source",ylab=contrib.lab,...)
     } else {
-      require("plotrix")
+      require(plotrix)
       plotCI(1:x$R,y=ifreq,li=ci[,1],ui=ci[,2],axes=FALSE,
              xlab="Source",ylab=contrib.lab,...)
     }
@@ -405,37 +314,23 @@ plot.mixstock.est <- function(x,
       if (x$method=="cml")
         warning("CML estimate, no source frequencies estimated")
       else
-        barplot(coef(x)$source.freq,col=markcolors,
-                main=sourcefreq.lab,ylim=c(0,1))
+        b <- barplot(coef(x)$source.freq,col=markcolors,
+                     main=sourcefreq.lab,ylim=c(0,1))
     }
   }
 }
 
-confint.mixstock.est <- function(object,parm,level=0.95,
-                                 profile=FALSE,
-                                 type=c("quantile","credible"),
-                                 show.sourcectr=TRUE,
-                                 show.haps=FALSE,...) {
-  type <- match.arg(type)
-  R <- nsource(object)
-  ## H <- nmark(object)
-  M <- nmix(object)
-  mm <- (M>1)
+confint.mixstock.est <- function(object,parm,level=0.95,profile=FALSE,all.par=FALSE,...) {
+  R <- object$R; H <- object$H
   alpha <- 1-level
+  npar <- ifelse(all.par,(R+H*R),R)
   if (!profile)
     if (!is.null(object$resample)) {
-      ##      if (length(dim(object$resample))==2) {
-      ci <- switch(type,
-                   quantile=t(apply(object$resample,2,
-                     quantile,c(alpha/2,1-alpha/2),na.rm=TRUE)),
-                   credible=HPDinterval(as.mcmc(object$resample)))
-      if (!mm && !show.haps) ci <- ci[1:R,]
-      if (mm && !show.sourcectr) ci <- ci[1:(R*M),]
-      ##       } else {
-      ##      return(aperm(apply(object$resample,c(2,3),
-      ##                         quantile,c(alpha/2,1-alpha/2),na.rm=TRUE),c(2,3,1)))
-      ##  }
-      return(ci)
+      if (length(dim(object$resample))==2) {
+        return(t(apply(object$resample[,1:npar],2,quantile,c(alpha/2,1-alpha/2),na.rm=TRUE)))
+      } else {
+        return(aperm(apply(object$resample,c(2,3),quantile,c(alpha/2,1-alpha/2),na.rm=TRUE),c(2,3,1)))
+      }
     } else return(NULL)
   if (profile) {
     warning("can't do profile yet")
@@ -452,7 +347,7 @@ AIC.mixstock.est <- function(object,...) {
   H <- object$H
   if (object$method=="cml") npar <- R-1
   else npar <- R-1 + (H-1)*R
-  -2*logLik(object)+2*npar
+  -2*logLik(x)+2*npar
 }
 
 mcmc.chainlength.est <- function(x,mult=1,inflate=sqrt(2),
@@ -621,9 +516,9 @@ gibbsmat <-  function(x,burnin=500,R=2,H=2,trans=TRUE) {
 
 gibbsrpt <- function(x,burnin=500,R=2,H=2,trans=TRUE,plot=TRUE) {
   ## assume x is metropolis output
-  ## outtab <- matrix()
+  outtab <- matrix()
   v2 <- gibbsmat(x,burnin,R,H,trans)
-  ## np <- (H-1)*(R+1)
+  np <- (H-1)*(R+1)
   np2 <- H*(R+1)
   if (trans)
     v3 <- unpackval2(x$est)
@@ -653,7 +548,7 @@ lsolve <- function(n,s,tol=1e-5,warn=FALSE) {
     warning("singular matrix, returning equal contribs")
     return(rep(1/R,R))
   }
-  m <- try(qr.solve(n,s,tol=tol),silent=TRUE)
+  m <- try(qr.solve(n,s,tol=tol))
   if (class(m)=="try-error") {
     if (warn) warning("solve failed, returning equal contribs")
     return(rep(1/R,R))
@@ -869,7 +764,7 @@ gibbs <- function(sourcesamp,mixsamp,a=1,startiter,maxiter,startfval=NULL,n.thin
     stop("Can't do Gibbs with all-missing loci ...")
   R <- ncol(sourcesamp)
   H <- nrow(sourcesamp)
-  ## totmix <- sum(mixsamp)
+  totmix <- sum(mixsamp)
   tmpmat <- matrix(nrow=H,ncol=R)
   ## calculate prior according to Pella and Masuda from harmonic mean: a scales the strength
   harm.n <- 1/mean(1/apply(sourcesamp,2,sum))
@@ -950,14 +845,14 @@ BUGS.out <- function(g,file=NULL) {
   }
 }
 
-## bbfuns no longer loaded
+## OBSOLETE (included in bbfuns library)
 ## rotate a vector
-.rotvec <- function(x,i) {
-  n <- length(x)
-  v <- ((1:n)+i+n) %% n
-  v[v==0] <- n
-  x[v]
-}       
+# rotvec <- function(x,i) {
+#   n <- length(x)
+#   v <- ((1:n)+i+n) %% n
+#   v[v==0] <- n
+#   x[v]
+#}       
 
 ## simulate pop. frequencies
 ## PROBLEM: after normalization, this doesn't preserve
@@ -966,9 +861,9 @@ sim.mark.freq <- function(H,R,g.mark,g.source) {
   x <- matrix(NA,nrow=H,ncol=R)
   totmarks <- g.mark^(1:H)
   for (i in 1:H) {
-    x[i,] <- .rotvec(totmarks[i]^(1:R),i-1)
+    x[i,] <- rotvec(totmarks[i]^(1:R),i-1)
   }
-  x <- normcols(x) ## check!!
+  x <- normcols(normfun)
   dimnames(x) <- mixstock.dimnames(H,R)
   x
 }
@@ -1055,7 +950,7 @@ markfreq.condense <- function(sourcesamp=NULL,mixsamp=NULL,debug=FALSE,
 
 ## run Heidelberger & Welch tests, report if all passed
 hwdiag.check <- function(x,verbose=FALSE) {
-  require("coda")
+  require(coda)
   mc <- mcmc(x)
   d <- heidel.diag(mc)
   if (verbose) print(d)
@@ -1164,7 +1059,7 @@ calc.mult.RL <- function(data,n=50,debug=FALSE,verbose=FALSE) {
   ## each chain from a large contribution from each source in turn
   if (debug) print(data)
   sourcesamp <- data$sourcesamp
-  ## mixsamp <- data$mixsamp
+  mixsamp <- data$mixsamp
   R <- ncol(sourcesamp)
   resmat <- matrix(nrow=n,ncol=R+2)
   for (i in 1:n) {
@@ -1191,7 +1086,7 @@ calc.mult.RL <- function(data,n=50,debug=FALSE,verbose=FALSE) {
   
 calc.GR <- function(data,tot=20000,burn=1,verbose=FALSE,rseed=1001,
                        chainfrac=NULL) {
-  require("coda")
+  require(coda)
   mixsamp <- data$mixsamp
   sourcesamp <- data$sourcesamp
   R <- ncol(sourcesamp)
@@ -1216,8 +1111,8 @@ calc.GR <- function(data,tot=20000,burn=1,verbose=FALSE,rseed=1001,
 }
 
 calc.mult.GR <- function(data,n=10,tot=20000,burn=1,verbose=FALSE) {
-  require("coda")   ## CODA instead of boa (why??)
-  ## mixsamp <- data$mixsamp
+  require(coda)   ## CODA instead of boa (why??)
+  mixsamp <- data$mixsamp
   sourcesamp <- data$sourcesamp
   R <- ncol(sourcesamp)
   gresmat <- matrix(nrow=n,ncol=R+1)
@@ -1233,7 +1128,6 @@ calc.mult.GR <- function(data,n=10,tot=20000,burn=1,verbose=FALSE) {
 }
 
 boxplot.mixstock.est <- function(x,...) {
-  arglist <- list(...)
   R <- arglist[[1]]$data$R
   if (!all(lapply(arglist,function(z)z$data$R)==R))
     stop("Different numbers of sources in estimates")
@@ -1276,7 +1170,7 @@ tmcmc <- function(data,n.iter=20000,rseed=1001,n.burnin=floor(n.iter/2),
     beta <- p.bayes(sourcesamp)
     a <- beta/harm.n
   }
-  ## sourcenames <- dimnames(sourcesamp)[[2]]
+  sourcenames <- dimnames(sourcesamp)[[2]]
   set.seed(rseed)
   if (contrib.only) maxpar <- R
   else maxpar <- R+R*H
@@ -1300,11 +1194,11 @@ tmcmc <- function(data,n.iter=20000,rseed=1001,n.burnin=floor(n.iter/2),
              startfval=z,a=a)[,1:maxpar]
     }
     else gibbs(start=n.burnin,
-               ## thin=1, ## thin not implemented?
-               maxiter=n.iter,
-               mixsamp=mixsamp,
-               sourcesamp=sourcesamp,rptiter=rptiter,
-               startfval=z,a=a)[,1:maxpar]
+           thin=1, ## thin not implemented?
+           maxiter=n.iter,
+           mixsamp=mixsamp,
+           sourcesamp=sourcesamp,rptiter=rptiter,
+           startfval=z,a=a)[,1:maxpar]
   }
   g <- lapply(1:R,chainfun)
   if(gr){ tmc <- mcmc.list(lapply(g, mcmc))
@@ -1393,7 +1287,7 @@ runsims <- function(sim.n=10,mc.n=10,totsamp=200,which="all",
     common.only <- TRUE
   }
   R <- ncol(true.freq)
-  ## H <- nrow(true.freq)
+  H <- nrow(true.freq)
   if (verbose) cat(R," sources ",totsamp," total samples\n")
 ## assume half of sample in mixed population, rest evenly divided betw. sources
   for (i in 1:sim.n) {
@@ -1427,7 +1321,7 @@ runsims <- function(sim.n=10,mc.n=10,totsamp=200,which="all",
     for (j in 1:mc.n) {
       cat("   runsim: boot/MCMC run ",j,"\n")
       if (est=="MCMC")
-        x <- tmcmc(sim,n.iter=nboot,rseed=1000+sim.n*i+j)$resample[,1:R]
+        x <- tmcmc(sim,tot=nboot,rseed=1000+sim.n*i+j)$resample[,1:R]
       else if (est=="cml")
         x <- genboot(sim,method="cml",rseed=1000+sim.n*i+j,fuzz=fuzz,nboot=nboot,
                      rpt=bootrpt)$resample[,1:R]
@@ -1459,7 +1353,7 @@ cml <- function(x,start.type="lsolve",
   ## assume x is a list with elements sourcesamp, mixsamp
   R <- ncol(x$sourcesamp)
   H <- nrow(x$sourcesamp)
-  ## mixfreq  <- x$mixsamp/sum(x$mixsamp)
+  mixfreq  <- x$mixsamp/sum(x$mixsamp)
   sourcefreq <- normcols(x$sourcesamp)
   tsourcefreq <- apply(sourcefreq,2,p.to.q,transf=transf)
   if (H==2) tsourcefreq <- matrix(tsourcefreq,nrow=1)
@@ -1494,11 +1388,11 @@ cml <- function(x,start.type="lsolve",
                  transf=transf,
                  lower=lower,
                  upper=upper,
-                 control=control,debug=debug,...),silent=TRUE)
+                 control=control,debug=debug,...))
   if ((!is.null(class(m))) && (class(m)=="try-error"))
     m <- list(coefficients=rep(NA,R-1),value=NA,convergence=NA)
   else class(m) <- "toptim"
-  mixstock.est(m,data=x,R=R,H=H,M=1,method="cml",transf=transf)
+  mixstock.est(m,data=x,R=R,H=H,method="cml",transf=transf)
 }
 
 
@@ -1650,7 +1544,7 @@ uml.em <- function(x,prec=1e-8,prior=1) {
   fval <- as.vector(fval)
   names(fval) <- sourcename
   m <- list(input.freq=fval,source.freq=sourcefreqval)
-  mixstock.est(m, data = x, R=R, H=H, M=1,method = "uml",
+  mixstock.est(m, data = x, R = R, H = H, method = "uml",
              transf="none", em = TRUE)
 }
 
@@ -1689,7 +1583,7 @@ uml.ds <- function(x,
                    debug=debug,
                    method=method,
                    lower=lower,upper=upper,
-                   control=control,...),silent=TRUE)
+                   control=control,...))
   } else {  ## ugly! without bounds for non-L-BFGS-B code
     m <- try(optim(par=start,
                    fn=uml.lik,
@@ -1698,14 +1592,14 @@ uml.ds <- function(x,
                    transf=transf,
                    debug=debug,
                    method=method,
-                   control=control,...),silent=TRUE)
+                   control=control,...))
 
   }
   if ((!is.null(class(m))) && (class(m) == "try-error")){
     m <- list(coefficients = rep(NA, ((R - 1) + R * (H - 1))),
               value = NA, convergence = NA)}
   class(m) <- "toptim"
-  mixstock.est(m,data=x,R=R,H=H,M=1,transf=transf,method="uml")
+  mixstock.est(m,data=x,R=R,H=H,transf=transf,method="uml")
 }
 
 uml.lik <- function(p,data,transf=c("full","part","none"),
@@ -1781,11 +1675,11 @@ genboot <- function(x,method="cml",
   fitnames <- c(paste("contrib",sourcenames,sep="."))
   if (method=="cml") {
     basefit = cml(x,fuzz=fuzz,ndepfac=ndepfac,...)
-    ## npar <- R-1
+    npar <- R-1
     noutpar <- R
   } else {
     basefit <- uml(x,start.type=start.type,fuzz=fuzz)
-    ## npar <- (R-1)+R*(H-1)
+    npar <- (R-1)+R*(H-1)
     noutpar <- R+R*H
     fitnames <- c(fitnames,
                   paste("sourcefreq",
@@ -1851,9 +1745,13 @@ genboot <- function(x,method="cml",
 
 #######################
 
+pm.bugscode <- system.file(package = "mixstock", "bugs", "pellamasuda.bug")
+mm.bugscode <- system.file(package = "mixstock", "bugs", "manymany.bug")
+sourcesize.bugscode <- system.file(package = "mixstock", "bugs", "sourcesize.bug")
+
 ## expand mixsamp data
 expand.bugs.data <- function (mixsamp) {
-  require("abind")
+  require(abind)
   if (!is.null(dim(mixsamp))) {  ## matrix or data frame
     ## recursive call to expand.bugs.data
     Tm <- colSums(mixsamp)
@@ -1871,7 +1769,7 @@ expand.bugs.data <- function (mixsamp) {
   if (!is.null(names(mixsamp))) {
     names(mixsamp) <- gsub("/", "", names(mixsamp))
   } else names(mixsamp) <- paste("H",1:length(mixsamp),sep="")
-  x1 <- factor(rep(names(mixsamp), mixsamp), levels = names(mixsamp)); x1 ## codetools kluge 
+  x1 <- factor(rep(names(mixsamp), mixsamp), levels = names(mixsamp))
   x2 <- model.matrix(~x1 - 1)
   attr(x2, "assign") <- attr(x2, "contrasts") <- NULL
   x2
@@ -1884,22 +1782,23 @@ pm.wbugs <- function(x,
                      n.iter=20000,n.burnin=floor(n.iter/2),
                      n.chains=x$R,
                      n.thin=max(1,floor(n.chains*(n.iter-n.burnin)/1000)),
-                     ...) {
-  pm.bugscode <- system.file(package = "mixstock", "bugs", "pellamasuda.bug")
-  require("R2WinBUGS")
-  ## variables repeated at end of line are codetools kluges
-  sourcesamp <- t(x$sourcesamp); sourcesamp
-  mixsamp <- expand.bugs.data(x$mixsamp); mixsamp
+                     useWINE,WINE=Sys.getenv("WINE"),WINEPATH="",...) {
+  require(R2WinBUGS)
+  if (missing(useWINE)) {
+    useWINE <- length(WINE)>0
+  }
+  sourcesamp <- t(x$sourcesamp)
+  mixsamp <- expand.bugs.data(x$mixsamp)
   R = ncol(x$sourcesamp)
   harm.n <- sqrt(1/mean(1/apply(x$sourcesamp,2,sum)))
   beta <- p.bayes(x$sourcesamp)
   a <- beta/harm.n
   ybar <- rowMeans(apply(x$sourcesamp,2,function(z)z/sum(z)))
-  sourceprior <- t(a*sqrt(harm.n)*matrix(rep(ybar,R),ncol=R)); sourceprior
-  contprior <- rep(1/R,R); contprior
+  sourceprior <- t(a*sqrt(harm.n)*matrix(rep(ybar,R),ncol=R))
+  contprior <- rep(1/R,R)
   sourceprop.obs <- t(normcols(x$sourcesamp))
-  T <- colSums(x$sourcesamp); T
-  H <- x$H; H
+  T <- colSums(x$sourcesamp)
+  H <- x$H
   N <- sum(x$mixsamp)
   data <- list("contprior","sourceprior","mixsamp","sourcesamp","T","R","H","N")
   parameters <- c("theta")
@@ -1914,55 +1813,8 @@ pm.wbugs <- function(x,
   ## convert from tmcmc to BUGS defaults
   b1 = bugs(data,inits,parameters,model.file=pm.bugscode,
     n.chains=R,n.iter=n.iter,
-    n.burnin=n.burnin,n.thin=n.thin,...)
-  b1
-}
-
-## write many-to-many model in original (T. Okuyama) format
-write.TO.bugscode = function(fn,MIX) {
-  cat("model {\n",file=fn)
-  for (m in 1:MIX) {
-    bstr = paste("for(i in 1:(Tm[",m,"])) {\n",
-      "   mixsamp",m,"[i,1:H] ~ dmulti(pi[Z",m,"[i],],1);\n",
-      "   Z",m,"[i] ~ dcat(theta[",m,",1:R]);\n",
-      "}\n",sep="")
-    cat(bstr,file=fn,append=TRUE)
-  }
-  block2 = c("# model for pi (the multinomial parameter)",
-    "for(i in 1:R){sourcesamp[i,1:H] ~ dmulti(pi[i,1:H],T[i])}",
-    ## "for(i in 1:R){T[i] <- sum(sourcesamp[i,])}",
-    "for(j in 1:R){pi[j,1:H] ~ ddirch(beta[j,])",
-    "for(k in 1:H){beta[j,k] <- fp[k]}}",
-    "",
-    "for(j in 1:R){",
-    "for(k in 1:(MIX+1)) {",
-    "	div[j,k] <- delta[j,k]/sum(delta[j,])",
-    "	delta[j,k] ~ dgamma(dp[k],1)",
-    "}",
-    "}",
-    "")
-  cat(block2,file=fn,append=TRUE,sep="\n")
-  cat("for(i in 1:R){",file=fn,append=TRUE)
-  for (m in 1:MIX) {
-    bstr = paste("   DERIV[",m,",i] <- div[i,",m,"]*sourcesize[i]",sep="")
-    cat(bstr,file=fn,append=TRUE,sep="\n")
-  }
-  block3 = c("}",
-    "",
-    "for(i in 1:MIX){",
-    "   mixsize[i] <- sum(DERIV[i,])",
-    "   rmixsize[i] <- mixsize[i]/sum(mixsize[])",
-    "}",
-    "",
-    "for(j in 1:MIX){",
-    "   for(i in 1:R){",
-    "      theta[j,i] <- DERIV[j,i]/sum(DERIV[j,])",
-    "   }",
-    "}",
-    "")
-##    "for(i in 1:(MIX+1)){dp[i] <- 1}")  ## now set as data
-  cat(block3,file=fn,append=TRUE,sep="\n")
-  cat("}",file=fn,append=TRUE,sep="\n")
+    n.burnin=n.burnin,n.thin=n.thin,
+    useWINE=useWINE,WINE=WINE,WINEPATH=WINEPATH,...)
 }
 
 mm.wbugs <- function(x,
@@ -1970,62 +1822,35 @@ mm.wbugs <- function(x,
                      n.iter=20000,n.burnin=floor(n.iter/2),
                      n.chains=x$R,
                      n.thin=max(1,floor(n.chains*(n.iter-n.burnin)/1000)),
+                     useWINE,WINE=Sys.getenv("WINE"),WINEPATH="",
                      files.only=FALSE,
                      inittype=c("dispersed","random"),
-                     bugs.code=c("TO","BB"),
-                     returntype=c("mixstock","coda","bugs"),
-                     pkg=c("WinBUGS","JAGS"),
-                     mixprior=1,
-                     which.init,debug=FALSE,
-                     working.directory,...) {
-  if (missing(working.directory)) working.directory <- tempdir()
-  pkg <- match.arg(pkg)
-  switch(pkg,WinBUGS=require("R2WinBUGS"),JAGS=require("R2jags"))
-  inittype <- match.arg(inittype)
-  returntype <- match.arg(returntype)
-  bugs.code <- match.arg(bugs.code)
-  sourcesamp <- t(x$sourcesamp)
-  R <- ncol(x$sourcesamp)
-  H <- nrow(x$sourcesamp); H ## codetools kluge
-  MIX <- ncol(x$mixsamp)
-  mm.bugscode <- paste(tempfile(paste("mm",bugs.code,"bugs",sep="_"),
-                                tmpdir=working.directory),"txt",sep=".")
-  if (bugs.code=="TO") {
-    write.TO.bugscode(mm.bugscode,MIX=MIX)
-    mixsamplist <- as.list(paste("mixsamp",1:MIX,sep=""))
-    for (i in 1:MIX) {
-      assign(paste("mixsamp",i,sep=""),expand.bugs.data(x$mixsamp[,i]))
-    }
-  } else {
-    file.copy(system.file(package = "mixstock", "bugs", "manymany.txt"),
-              mm.bugscode)
-    mixsamplist <- list("mixsamp")
-    mixsamp <- expand.bugs.data(x$mixsamp)
-    mixsamp ## codetools kluge
+                     which.init,...) {
+  require(R2WinBUGS)
+  if (missing(useWINE)) {
+    useWINE <- nchar(WINE)>0
   }
+  inittype <- match.arg(inittype)
+  sourcesamp <- t(x$sourcesamp)
+  mixsamp <- expand.bugs.data(x$mixsamp)
+  R <- ncol(x$sourcesamp)
+  H <- nrow(x$sourcesamp)
+  MIX <- ncol(x$mixsamp)
   ## n.chains <- R
-  harm.n <- sqrt(1/mean(1/colSums(sourcesamp)))
+  harm.n <- sqrt(1/mean(1/apply(sourcesamp, 2, sum)))
   beta <- p.bayes(sourcesamp)
   a <- beta/harm.n
   ybar <- colMeans(normcols(sourcesamp))
   sourceprior <- t(a * sqrt(harm.n) * matrix(rep(ybar, R), 
                                              ncol = R))
-  ## contprior <- rep(1/R, R)
+  contprior <- rep(1/R, R)
   sourceprop.obs <- t(normcols(sourcesamp))
   if (missing(sourcesize)) sourcesize <- rep(1,R)
   attr(sourceprop.obs,"scaled:scale") <- NULL
-  T <- rowSums(sourcesamp); T ## codetools kluge
+  T <- rowSums(sourcesamp)
   Tm <- colSums(x$mixsamp)
-  maxTm <- max(Tm)
   fp <- sourceprior[1,]  ## haplotype freq prior
-  dp <- mixprior
-  dp <- rep(dp,length.out=MIX+1) ## replicate mixed prior if necessary
-  c(fp,dp) ## codetools kluge
-  data <- c(list("Tm",
-                 "sourcesamp","sourcesize",
-                 "R","H","MIX","fp","dp","T"),
-            mixsamplist)
-  if (bugs.code=="BB" && pkg=="JAGS") data <- c(data,"maxTm")
+  data <- list("Tm","sourcesamp","mixsamp","sourcesize","R","H","MIX","fp")
   parameters <- c("theta","div")
   ## initial values:
   if (inittype=="random") {
@@ -2033,7 +1858,7 @@ mm.wbugs <- function(x,
   } else {
     inits <- list()
     ## we run into problems trying to
-    ## do, e.g., ... ?
+    ## do, e.g.,
     basetheta <- rep(0.05/(R - 1), R)
     if (missing(which.init)) {
       if (n.chains==R) {
@@ -2041,62 +1866,30 @@ mm.wbugs <- function(x,
       } else which.init <- sort(sample(1:R,size=n.chains,replace=FALSE))
     }
     for (i in 1:n.chains) {
-      w <- which.init[i]
-      if (w>0) {
-        ## set initial values for hap freqs in rookeries (= observed prop),
-        ##   ##  origins (=95% in chain i)
-        fval <- basetheta
-        fval[w] <- 0.95
-      } else {
-        stop("stub: should set chain to UML solution ...\n")
-      }
+      ## set initial values for hap freqs in rookeries (= observed prop),
+      ##   ##  origins (=95% in chain i)
+      fval <- basetheta
+      fval[i] <- 0.95
       Zrand <- matrix(sample(1:R, size = MIX*max(Tm), replace = TRUE, prob = fval),
                       nrow=MIX)
-      if (bugs.code!="TO") {
-        inits[[i]] <- list(Z=Zrand)
-      } else {
-        initlist <- list()
-        for (j in 1:MIX) {
-          Zname <- paste("Z",j,sep="")
-          initlist<- c(initlist,list(Zrand[j,1:Tm[j]]))
-          names(initlist)[j] <- Zname
-        }
-        inits[[i]] <- initlist
-      } ## TO code
-    } ## loop over number of chains
+      inits[[i]] <- list(Z=Zrand)
       ## pi = t(sourceprop.obs),
       ## TO DO: try adjusting hap freq start, or using one or the other
-  } ## inittype != random
-  if (pkg=="WinBUGS") {
-    elapsed <- system.time(b1 <- bugs(data,inits,parameters,mm.bugscode,
-                                      n.chains=n.chains,
-                                      n.iter=n.iter,n.burnin=n.burnin,
-                                      n.thin=n.thin,
-                                      working.directory=working.directory,
-                                      debug=debug,...))[3]
-  } else {
-    ## browser()
-    elapsed <- system.time(b1 <- jags(data,inits,parameters,mm.bugscode,
-                                      n.chains=n.chains,
-                                      n.iter=n.iter,n.burnin=n.burnin,
-                                      n.thin=n.thin,
-                                      working.directory=working.directory,
-                                      ...)$BUGSoutput)[3]
+    }
   }
-  return(switch(returntype,
-                mixstock=as.mixstock.est.bugs(b1,data=x,time=elapsed),
-                coda=as.mcmc.bugs(b1),
-                bugs=b1))
+  b1 <- bugs(data,inits,parameters,mm.bugscode,n.chains=n.chains,
+             n.iter=n.iter,n.burnin=n.burnin, n.thin=n.thin,useWINE=useWINE,
+             WINE=WINE,newWINE=TRUE,WINEPATH=WINEPATH,...)
+  return(as.mixstock.est.bugs(b1,x))
 }
 
-## WinBUGS code with hierarchical size covariates (not many-to-many)
+## WinBUGS code with hierarchical size covariates
 sourcesize.wbugs <- function(x,
                              n.iter=20000,n.burnin=floor(n.iter/2),
                              n.chains=x$R,
                              n.thin=max(1,floor(n.chains*(n.iter-n.burnin)/1000)),
-                             ...) {
+                             useWINE, WINE = Sys.getenv("WINE"), ...) {
   stop("stub")
-  ## sourcesize.bugscode <- system.file(package = "mixstock", "bugs", "sourcesize.bug")
 }
 
 as.mcmc.bugs <- function(x) {
@@ -2194,40 +1987,31 @@ function(sampsize=NULL,
     if (verbose) cat("mcmc\n")
     if (is.null(chainlen))
       chainlen <- mcmc.chainlength.est(x,mult=5)
-    results <- c(results,mcmc=list(tmcmc(x,n.iter=chainlen,
+    results <- c(results,mcmc=list(tmcmc(x,tot=chainlen,
    contrib.only=contrib.only)))
   }
   results
 }
 
 simmixstock2 <- function(sourcefreq, destmat,
-                         sourcesize,
-                         sourcesampsize, mixsampsize,
-                         nmark, nsource, nmix,
+                         sourcesize, 
+                         sourcesampsize, mixsampsize, 
                          rseed = NULL) 
 {
-  nmat <- function(x) { sweep(x,2,colSums(x),"/") }
   if (!is.null(rseed)) 
     set.seed(rseed)
   sourcesampsize <- round(sourcesampsize)
-  if (missing(nsource)) nsource <- length(sourcesampsize)
   mixsampsize <- round(mixsampsize)
-  if (missing(nmix)) nmix <- length(mixsampsize)
-  if (missing(nmark)) {
-    if (missing(sourcefreq))
-      stop("must specify source  frequencies or number of marker classes")
-    nmark <- nrow(sourcefreq)
-  }
-  if (missing(sourcefreq)) sourcefreq=nmat(matrix(runif(nmark*nsource),nrow=nmark))
-  if (missing(destmat)) destmat=nmat(matrix(runif(nmix*nsource),nrow=nmix))
-  if (missing(sourcesize)) sourcesize <- rep(1,nsource)
+  H <- nrow(sourcefreq)
+  R <- ncol(sourcefreq)
+  M <- nrow(destmat)
   sourcesamp.r <- apply(sourcefreq, 2, rmultinom,
                         n=1, size=sourcesampsize)
-  mix.freq <- nmat(t(t(sourcefreq)*sourcesize) %*% t(destmat))
+  mix.freq <- sourcefreq %*% destmat
   mixsamp.r <-  apply(mix.freq, 2, rmultinom,
                       n=1, size=mixsampsize)
-  dimnames(sourcesamp.r) <- mixstock.dimnames(nmark, nsource)
-  dimnames(mixsamp.r) <- list(marker=dimnames(sourcesamp.r)[[1]],mix=paste("M",1:nmix,sep=""))
+  dimnames(sourcesamp.r) <- mixstock.dimnames(H, R)
+  dimnames(mixsamp.r) <- list(marker=dimnames(sourcesamp.r)[[1]],mix=paste("M",1:M,sep=""))
   return(mixstock.data(sourcesamp=sourcesamp.r,mixsamp=mixsamp.r))
 }
 
@@ -2377,47 +2161,9 @@ get.mp.input <- function(fn,which=1) {
        startfval = ctl$startval, thin = 1, fprior = ctl$fprior, rptiter = -1)
 }
 
-as.mixstock.est.bugs <- function(object,data=NULL,time) {
+as.mixstock.est.bugs <- function(object,data=NULL) {
   X <- list()
-  mm <- (!is.null(object$sims.list$div)) ## ?? is this adequate?
   X$fit <- list(input.freq=colMeans(object$sims.list$theta),source.freq=NULL)
-  if (!is.null(object$sims.list$div)) {
-    X$fit <- c(X$fit,list(sourcectr.freq=colMeans(object$sims.list$div)))
-  }
-  X$resample <- object$sims.matrix[,!colnames(object$sims.matrix) %in% "deviance"]
-  ##                                   1:(ncol(object$sims.matrix)-1)]
-  X$resamplist <- object$sims.list
-  X$R <- ncol(X$fit$input.freq)
-  X$M <- nrow(X$fit$input.freq)
-  X$data <- data
-  X$method <- "mcmc"
-  X$boot.method <- "mcmc"
-  if (!missing(time)) X$time <- time
-  class(X) <- "mixstock.est"
-  X$H <- NA
-  if (!is.null(data)) {
-    X$H <- data$H
-    if (mm) {
-      ## need data to get source and mix names
-      mnames <- colnames(data$mixsamp)
-      rnames <- colnames(data$sourcesamp)
-      ## fixed bug: names were backwards
-      dimnames(X$fit$input.freq) <- list(mnames,rnames)
-      dimnames(X$fit$sourcectr.freq) <- list(rnames,c(mnames,"Unknown"))
-      dimnames(X$resample) <- list(NULL,
-                                   c(t(outer(mnames,rnames,paste,sep=".")),
-                                     t(outer(rnames,c(mnames,"Unk"),paste,sep="."))))
-      dimnames(X$resamplist$theta) <- list(NULL,mnames,rnames)
-      dimnames(X$resamplist$div) <- list(NULL,rnames,c(mnames,"Unknown"))
-    }
-  }
-  X
-}
-
-as.mixstock.est.mcmc <- function(object,data=NULL) {
-  stop("stub")
-  X <- list()
-  X$fit <- list(input.freq=object,source.freq=NULL)
   X$resample <- object$sims.list$theta
   X$R <- length(X$fit$input.freq)
   X$data <- data
@@ -2430,35 +2176,18 @@ as.mixstock.est.mcmc <- function(object,data=NULL) {
     if (is.matrix(X$fit$input.freq)) {
       mnames <- colnames(data$mixsamp)
       rnames <- colnames(data$sourcesamp)
-      ## fixed bug: names were backwards
-      dimnames(X$resample) <- list(NULL,mnames,rnames)
-      dimnames(X$fit$input.freq) <- list(mnames,rnames)
+      dimnames(X$resample) <- list(NULL,rnames,mnames)
+      dimnames(X$fit$input.freq) <- list(rnames,mnames)
     }
   }
   X
 }
-  
 
-nsource <- function(object) {
-  object$R
-}
-nmix <- function(object) {
-  if (is.null(object$M)) 1 else object$M
-}
-nmark <- function(object) {
-  object$H
-}
-"nsource<-" <- function(object,value) {
-  object$R <- value
-  object
-}
-"nmix<-" <- function(object,value) {
-  object$M <- value
-  object
-}
-"nmark<-" <- function(object,value) {
-  object$H <- value
-  object
-}
+## nsource.mixstock.data <- function(x) {
+##   x$R
+## }
 
-
+## nmix.mixstock.data <- function(x) {
+##   x$M
+## }
+@
