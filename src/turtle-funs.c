@@ -1,10 +1,14 @@
 #include <math.h>
 #include <stdio.h>
-#include "R_ext/PrtUtil.h"
+#include <R_ext/PrtUtil.h>
 #include <Rmath.h>
 #include "utils.h"
-#define MAXDIM 100
-#define MAXVECDIM 10000
+#define MAXMARK 500
+#define MAXMARK1 501
+#define MAXSRC  100
+#define MAXSRC1 101
+/* MAXDIM was 100 */
+#define MAXVECDIM 50000  /* product */
 
 void rem(double * x, int * n) {
   /* argh! this should be easy ... fixed stupid stupid bugs */
@@ -73,7 +77,9 @@ void dcmat(double *p, double *xmat, int *len,
 	   int *debug) {
   int r,c,k,nrow,ncol;
   int contin=0;
-  double remmat[MAXDIM][MAXDIM],tmpsum;
+  /* how big must this be? how big can it be? */
+  double remmat[MAXMARK][MAXMARK1];
+  double tmpsum;
   nrow=*len+1;
   ncol = *len;
   /* fill in remmat with x[-z] */
@@ -88,8 +94,8 @@ void dcmat(double *p, double *xmat, int *len,
   if (*debug==1) {
     for (r=0; r<(nrow-1); r++) {
       for (c=0; c<ncol; c++)
-	fprintf(stderr,"%1.3f ",remmat[r][c]);
-      fprintf(stderr,"\n");
+	REprintf("%1.3f ",remmat[r][c]);
+      REprintf("\n");
     }
   }
   /* fill in lower triangle */
@@ -102,8 +108,8 @@ void dcmat(double *p, double *xmat, int *len,
   if (*debug==1) {
   for (r=0; r<(nrow-1); r++) {
     for (c=0; c<ncol; c++)
-      fprintf(stderr,"%1.3f ",xmat[r+c*nrow]);
-    fprintf(stderr,"\n");
+      REprintf("%1.3f ",xmat[r+c*nrow]);
+    REprintf("\n");
   }
   }
   /* fill in diagonal */
@@ -122,8 +128,8 @@ void dcmat(double *p, double *xmat, int *len,
   }
   
 void p_to_q(double * p, int n) {
-  double rem[MAXDIM];
-  double v[MAXDIM];
+  double rem[MAXSRC];
+  double v[MAXSRC];
   int i;
 
   rem[0] = 1.0;
@@ -158,7 +164,7 @@ void p_to_q(double * p, int n) {
 
 
 void trans_par(double poolfreq[],
-	       double h[MAXDIM][MAXDIM],
+	       double h[MAXSRC][MAXMARK],
 	       double *prmvec,
 	       int R, int H,
 	       int contin,
@@ -194,11 +200,11 @@ void trans_par(double poolfreq[],
 
 /* unused */
 void invtrans_par(double poolfreq[], 
-		  double h[MAXDIM][MAXDIM], 
+		  double h[MAXSRC][MAXMARK], 
 		  double *prmvec, int R, int H,
 		  int contin) {
   /* translate parameters from */
-  double f[MAXDIM];
+  double f[MAXSRC];
   int i,j,k;
 
   for (i=0; i<(R-1); i++)
@@ -262,8 +268,8 @@ void loglik3wrap(double *lik,
 		 int * n_samp,
 		 int * cumcount, 
 		 int * debug) {
-  double pool_freq[MAXDIM];
-  double contrib[MAXDIM];
+  double pool_freq[MAXMARK];
+  double contrib[MAXSRC];
   /* double h1[MAXDIM][MAXDIM]; */
   double *hvec;
 
@@ -307,8 +313,8 @@ void loglik2wrap(double *lik,  /* likelihood (return value) */
 		 int * full,      /* return full likelihood? */
 		 int * cond,      /* conditional likelihood? */
 		 int * debug) {
-  double pool_freq[MAXDIM];
-  double h1[MAXDIM][MAXDIM];
+  double pool_freq[MAXMARK];
+  double h1[MAXSRC][MAXMARK];
   double hvec[MAXVECDIM];
 
   int r,h,k;

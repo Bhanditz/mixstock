@@ -1,0 +1,5 @@
+2012-01-30  Ben Bolker  <bolker@mcmaster.ca>
+
+	* add NAMESPACE
+	* tweak source code to avoid warnings; comment out unnused BUGSout, etc.
+

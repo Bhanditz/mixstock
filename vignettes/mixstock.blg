@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99c (TeX Live 2009/Debian)
+The top-level auxiliary file: mixstock.aux
+The style file: chicago.bst
+Database file #1: mixstock.bib
+Warning--no number and no volume in Bolker+07
+Warning--page numbers missing in Bolker+07
+You've used 8 entries,
+            2861 wiz_defined-function locations,
+            670 strings with 6496 characters,
+and the built_in function-call counts, 6444 in all, are:
+= -- 476
+> -- 631
+< -- 0
++ -- 198
+- -- 204
+* -- 660
+:= -- 1217
+add.period$ -- 26
+call.type$ -- 8
+change.case$ -- 70
+chr.to.int$ -- 8
+cite$ -- 10
+duplicate$ -- 136
+empty$ -- 315
+format.name$ -- 232
+if$ -- 1183
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 8
+newline$ -- 45
+num.names$ -- 80
+pop$ -- 49
+preamble$ -- 1
+purify$ -- 120
+quote$ -- 0
+skip$ -- 143
+stack$ -- 0
+substring$ -- 255
+swap$ -- 43
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 150
+warning$ -- 2
+while$ -- 61
+width$ -- 0
+write$ -- 112
+(There were 2 warnings)

@@ -1,6 +1,10 @@
-.First.lib <- function(lib,pkg) {
-  library.dynam("mixstock",pkg,lib)
-}
+## .First.lib <- function(lib,pkg) {
+##  library.dynam("mixstock",pkg,lib)
+## }
+
+## hard-coded limits in C functions (!!)
+MAXMARK <- 500
+MAXSRC  <- 100
 
 ## blockdiag, rdirichlet, dec.to.roman, addlabels.barplot extracted from
 ##  bbmisc package -- avoid extra dependencies
@@ -140,7 +144,9 @@ as.mixstock.est <- function(object) {
   object
 }
 
-mixstock.est <- function(fit,resample=NULL,data=NULL,em=FALSE,
+mixstock.est <- function(fit,resample=NULL,
+                         resample.index=NULL,
+                         data=NULL,em=FALSE,
                        sourcesamp=NULL,mixsamp=NULL,R=NULL,H=NULL,M=1,
                        transf="full",method="unknown",
                        boot.method="none",
@@ -158,7 +164,7 @@ mixstock.est <- function(fit,resample=NULL,data=NULL,em=FALSE,
       R <- ncol(sourcesamp)
       H <- nrow(sourcesamp)
     }
-  object <- list(fit=fit,resample=resample,
+  object <- list(fit=fit,resample=resample,resample.index=resample.index,
                  ## used only for one-to-many analyses
                  data=list(sourcesamp=sourcesamp,mixsamp=mixsamp,R=R,H=H,M=1),
                  R=R,H=H,M=1,
@@ -221,18 +227,20 @@ coef.mixstock.est <- function(object,...) {
          input.only=(object$method=="cml"))
 }
 
-summary.mixstock.est <- function(object,...) {
-  if (is.null(object$data)) {
-    cat("No data stored\n")
-  } else {
-    print.mixstock.data(object$data)
+summary.mixstock.est <- function(object,show.data=TRUE,...) {
+  if (show.data) {
+    if (is.null(object$data)) {
+      cat("No data stored\n")
+    } else {
+      print.mixstock.data(object$data)
+    }
   }
   ## print.mixstock.est(object)
   ## if (!is.null(object$resample)) {
   ## cat("\nResampling method:",object$boot.method,"\n")
   ## print(summary(object$resample))
   ##  }
-  cobj <- confint(object)
+  cobj <- confint(object,...)
   fit <- object$fit[!sapply(object$fit,is.null)] ## drop NULLs
   all <- cbind(unlist(lapply(fit,t)),cobj)
   rownames(all) <- rownames(cobj)
@@ -263,6 +271,7 @@ plot.mixstock.data <- function(x,prop=TRUE,legend=TRUE,
                                stacklabels=FALSE,
                                sampsize=FALSE,
                                horiz=TRUE,
+                               vlab="Haplotype frequency",
                                ...) {
   ## H <- nrow(x$sourcesamp)
   R <- ncol(x$sourcesamp)
@@ -276,9 +285,9 @@ plot.mixstock.data <- function(x,prop=TRUE,legend=TRUE,
   if (prop) vals <- sweep(vals,2,ssize,"/")
   if (legend) {
     if (horiz) {
-      layout(matrix(1:2,nrow=1,ncol=2),width=c(1,leg.space))
+      layout(matrix(1:2,nrow=1,ncol=2),widths=c(1,leg.space))
     } else {
-      layout(matrix(2:1,nrow=2,ncol=1),height=c(leg.space,1))
+      layout(matrix(2:1,nrow=2,ncol=1),heights=c(leg.space,1))
     }
     ## if (!legend) leg.space <- 0
     ## y.ht <- 1/(1-leg.space)
@@ -294,13 +303,15 @@ plot.mixstock.data <- function(x,prop=TRUE,legend=TRUE,
                  axes=FALSE,col=colors,
                  space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),
                  horiz=TRUE,
-                 names.arg=rep("",R+M),...)
+                 names.arg=rep("",R+M),
+                 xlab=vlab,...)
   } else {
     b <- barplot(as.matrix(vals), ## ylim=c(0,y.ht),
                  axes=FALSE,col=colors,
                  space=c(rep(0.2,R),mix.off,rep(0.2,M-1)),
                  horiz=FALSE,
-                 names.arg=rep("",R+M),...)
+                 names.arg=rep("",R+M),
+                 ylab=vlab,...)
   }
   b.axis = if (horiz) 2 else 1
   f.axis = if (horiz) 1 else 2
@@ -337,6 +348,7 @@ plot.mixstock.est <- function(x,
                               alength=0.25,
                               aunits="inches",
                               abbrev,
+                              level=0.95,
                               ## scales=list(),
                               ## lattice.args=list(),
                               ## layout=NULL,
@@ -378,7 +390,7 @@ plot.mixstock.est <- function(x,
       L <- split(y,x)
       xvec <- 1:length(L)
       m <- sapply(L,mean)
-      ci <- sapply(L,quantile,c(0.025,0.975))
+      ci <- sapply(L,quantile,c((1-level)/2,(1+level)/2))
       lpoints(xvec,m,pch=16)
       larrows(xvec,m,xvec,ci[1,],angle=90,length=alength,units=aunits,)
       larrows(xvec,m,xvec,ci[2,],angle=90,length=alength,units=aunits)
@@ -391,16 +403,16 @@ plot.mixstock.est <- function(x,
     else
       vals <- coef(x)
     ifreq <- vals$input.freq
-    ci <- confint(x)
+    ci <- confint(x,level=level)
     if (is.null(ci)) {
       plot(1:x$R,ifreq,axes=FALSE,xlab="Source",ylab=contrib.lab,...)
     } else {
       require("plotrix")
-      plotCI(1:x$R,y=ifreq,li=ci[,1],ui=ci[,2],axes=FALSE,
-             xlab="Source",ylab=contrib.lab,...)
+      suppressWarnings(plotCI(1:x$R,y=ifreq,li=ci[,1],ui=ci[,2],axes=FALSE,
+                              xlab="Source",ylab=contrib.lab,...))
     }
     axis(side=2)
-    axis(side=1,at=1:x$R,label=names(ifreq))
+    axis(side=1,at=1:x$R,labels=names(ifreq))
     if (plot.freqs) {
       if (x$method=="cml")
         warning("CML estimate, no source frequencies estimated")
@@ -499,6 +511,8 @@ mcmc.chainlength.est <- function(x,mult=1,inflate=sqrt(2),
   
 
 q.to.p <- function(q,transf="full") {
+  if (length(q)>MAXSRC*MAXMARK) stop(paste("exceeded hard-coded size limits:",
+                                            "(total vector length=",MAXSRC*MAXMARK,")",sep=""))
   contin = (transf=="full")
   if (any(is.na(q)))
     rep(NA,length(q)+1)
@@ -541,6 +555,8 @@ loglik2.C <- function(p,sourcesamp,
   cumcount <- 0
   H <- length(mixsamp)
   R <- length(sourcesamp)/H
+  if (R>MAXSRC || H > MAXMARK) stop(paste("exceeded hard-coded size limits:",
+                                    " (R=",MAXSRC,", H=",MAXMARK,")",sep=""))
   result <- .C("loglik2wrap",
                as.double(lik),
                as.double(p),
@@ -734,7 +750,7 @@ normcols <- function(z) {
   scale(z,center=FALSE,scale=colSums(z))
 }
 
-gibbsC <- function(a=1,startiter,maxiter,data,mixsamp=NULL,
+gibbsC <- function(a=1,startiter=0, maxiter,data,mixsamp=NULL,
                    sourcesamp=NULL,startfval=NULL,thin=1,
                    fprior=NULL,outfile=FALSE,outfn="mixstock-gibbs",
                    randseed=1001,
@@ -743,8 +759,6 @@ gibbsC <- function(a=1,startiter,maxiter,data,mixsamp=NULL,
                    contrun=FALSE,contrib.start=NULL,
                    sourcefreq.start=NULL) {
   ## must match defs in mixstock-gibbs.c (or at least be no larger)
-  MAXMARK <- 100
-  MAXSOURCE <- 100
   if (is.null(mixsamp) & is.null(sourcesamp))
     if (is.null(data))
       stop("must provide data!")
@@ -754,8 +768,8 @@ gibbsC <- function(a=1,startiter,maxiter,data,mixsamp=NULL,
     }
   R <- ncol(sourcesamp)
   H <- nrow(sourcesamp)
-  if (H>MAXMARK) stop("# markers > MAXMARK")
-  if (R>MAXSOURCE) stop("# sources > MAXSOURCE")
+  if (H>MAXMARK) stop(paste("# markers > MAXMARK(=",MAXMARK,")",sep=""))
+  if (R>MAXSRC) stop(paste("# sources > MAXSOURCE (=",MAXSRC,")",sep=""))
   sourcesamp <- as.matrix(sourcesamp)
   sourcesum <- apply(sourcesamp,1,sum)
   if (thin>1 && (maxiter-startiter %% thin >0)) {
@@ -784,6 +798,8 @@ gibbsC <- function(a=1,startiter,maxiter,data,mixsamp=NULL,
         "\nrandseed:",randseed,
         "\nrptiter:",rptiter,
         "\noutfn:",outfn,"\n")
+  if (R>MAXSRC || H > MAXMARK) stop(paste("exceeded hard-coded size limits:",
+                                          " (R=",MAXSRC,", H=",MAXMARK,")",sep=""))
   r <- .C("gibbswrap",
           as.integer(H),
           as.integer(R),
@@ -1074,7 +1090,7 @@ calc.RL.0 <- function (data, startfval = 0, pilot = 500, maxit = 15, verbose = F
     res <- matrix(ncol = 2, nrow = maxit + 1)
     if (debug) 
         cat("Beginning gibbsC\n")
-    g0 <- gibbsC(start = 0, thin = 1, maxiter = pilot, mixsamp = 
+    g0 <- gibbsC(startiter = 0, thin = 1, maxiter = pilot, mixsamp = 
                  mixsamp, 
                  sourcesamp = sourcesamp, startfval = startfval, randseed = rseed)
     contrib.end <- g0[pilot,1:R]
@@ -1105,7 +1121,7 @@ RL.parms["Total"],
         res[it, ] <- c(curlen, RL.parms["Total"])
         curlen <- RL.parms["Total"]
         add.num <- curlen - pilot
-        g1 <- gibbsC(start = 0, thin = 1, maxiter = add.num, 
+        g1 <- gibbsC(startiter = 0, thin = 1, maxiter = add.num, 
             mixsamp = mixsamp, sourcesamp = sourcesamp, startfval = 
 startfval, 
             randseed = rseed + it,contrib.start = contrib.end, 
@@ -1201,7 +1217,7 @@ calc.GR <- function(data,tot=20000,burn=1,verbose=FALSE,rseed=1001,
   g <- lapply(1:R,
         	function(z) {
 	      if (verbose) cat("G&R: running chain",z,"of",R,"\n");
-              gibbsC(start=burn+chain.start,
+              gibbsC(startiter=burn+chain.start,
                      thin=1,
                      maxiter=tot+burn,
                      mixsamp=mixsamp,
@@ -1291,7 +1307,7 @@ tmcmc <- function(data,n.iter=20000,rseed=1001,n.burnin=floor(n.iter/2),
         outfn <- paste(outfile,".",z,sep="")
         outfile <- TRUE
       }
-      gibbsC(start=n.burnin,
+      gibbsC(startiter=n.burnin,
              thin=n.thin,
              maxiter=n.iter,
              mixsamp=mixsamp,
@@ -1299,7 +1315,7 @@ tmcmc <- function(data,n.iter=20000,rseed=1001,n.burnin=floor(n.iter/2),
              sourcesamp=sourcesamp,rptiter=rptiter,
              startfval=z,a=a)[,1:maxpar]
     }
-    else gibbs(start=n.burnin,
+    else gibbs(startiter=n.burnin,
                ## thin=1, ## thin not implemented?
                maxiter=n.iter,
                mixsamp=mixsamp,
@@ -1315,7 +1331,7 @@ tmcmc <- function(data,n.iter=20000,rseed=1001,n.burnin=floor(n.iter/2),
         }
   if (verbose) cat("Chains done: trying to combine them\n")
   allchains <- as.data.frame(do.call("rbind",g),row.names=NULL)
-  allchains.sum <- apply(allchains,2,mean)
+  allchains.sum <- colMeans(allchains)
   if (!contrib.only) {
     source.freq <- matrix(allchains.sum[(R+1):length(allchains.sum)],ncol=R)
     dimnames(source.freq) <- dimnames(data$sourcesamp)
@@ -1324,15 +1340,16 @@ tmcmc <- function(data,n.iter=20000,rseed=1001,n.burnin=floor(n.iter/2),
     source.freq <- NULL
   mixstock.est(fit=list(input.freq=allchains.sum[1:R],
                  source.freq=source.freq),
-               resample=allchains,
-               data=data,
-               method="mcmc",
-               boot.method="mcmc",
-               transf="part",GR=GR,
+                 resample=allchains,
+                 resample.index=rep(1:length(g),sapply(g,nrow)),
+                 data=data,
+                 method="mcmc",
+                 boot.method="mcmc",
+                 transf="part",GR=GR,
                prior=a)
 }
 
-mysumvec <- function(x,names=NULL) {
+mysumvec <- function(x,names=NULL,levels=c(0.95,0.9)) {
   if (is.null(names))
     if (!is.null(names(x)))
       names <- names(x)
@@ -1340,12 +1357,15 @@ mysumvec <- function(x,names=NULL) {
       names <- dimnames(x)[[2]]
     else
       names <- rep("",ncol(x))
+  Qvec <- c((1-levels[1])/2,(1-levels[2])/2,(1+levels[2])/2,(1+levels[1])/2)
   y <- c(apply(x,2,mean,na.rm=TRUE),apply(x,2,median,na.rm=TRUE),
-         apply(x,2,sd,na.rm=TRUE),apply(x,2,quantile,0.025,na.rm=TRUE),
-         apply(x,2,quantile,0.05,na.rm=TRUE),apply(x,2,quantile,0.95,na.rm=TRUE),
-         apply(x,2,quantile,0.975,na.rm=TRUE))
-  names(y) <- t(outer(c("mean","median","sd","Q02.5","Q05","Q95","Q97.5"),
-                      names,paste,sep="."))
+         apply(x,2,sd,na.rm=TRUE),
+         apply(x,2,quantile,Qvec[1],na.rm=TRUE),
+         apply(x,2,quantile,Qvec[2],na.rm=TRUE),
+         apply(x,2,quantile,Qvec[3],na.rm=TRUE),
+         apply(x,2,quantile,Qvec[4],na.rm=TRUE))
+  names(y) <- t(outer(c("mean","median","sd",paste("Q",Qvec,sep="")),
+                        names,paste,sep="."))
   y
 }
 
@@ -1520,9 +1540,11 @@ numderiv <- function(p,fn,eps=1e-5,...) {
   ret
 }
 
-
+## FIXME: remind myself what this does and what the limits should be
 dcmat.a <- function(x,debug=FALSE) {
   n <- length(x)
+  if (n>MAXMARK) stop(paste("exceeded hard-coded size limits:",
+                                           "(R=",MAXMARK,")",sep=""))
   matrix(.C("dcmat",as.double(x),as.double(numeric(n*(n+1))),as.integer(n),
             as.integer(debug),PACKAGE="mixstock")[[2]],
          nrow=n+1)
@@ -1536,8 +1558,8 @@ cml.grad <- function(p,
                      fulllik=NULL,
                      debug=FALSE) {
   ## sourcefreq  is transformed source frequencies
-  R = ncol(sourcefreq)
-  H = nrow(sourcefreq)+1
+  R <- ncol(sourcefreq)
+  H <- nrow(sourcefreq)+1
   c0 <- unpackval(c(p,sourcefreq),transf=transf,R=R,H=H)
   M <- data$mixsamp  ## true samples
   m <- as.matrix(c0$source.freq) %*% c0$input.freq  ## calc freqs in mix
@@ -1766,7 +1788,7 @@ mixstock.boot <- function(x,param=FALSE,condense=TRUE,save.freq=FALSE,
 genboot <- function(x,method="cml",
                     nboot=1000,rseed=1001,
                     verbose=FALSE,fuzz=1e-3,
-                    maxfail=100,rpt=20,
+                    maxfail=100,pb=TRUE,
                     start.type="lsolve",
                     param=FALSE,
                     param.match="mean",
@@ -1796,8 +1818,10 @@ genboot <- function(x,method="cml",
   boot.results <- matrix(nrow=nboot,ncol=nbootres)
   if (save.boot) boot.data <- list()
   else boot.data <- NULL
+  if (pb) tpb <- txtProgressBar(max=nboot)
   for (i in 1:nboot) {
-    if (i %% rpt == 0) cat("genboot ",i,"\n")
+    ## if (i %% rpt == 0) cat("genboot ",i,"\n")
+    if (pb) setTxtProgressBar(tpb,i)
     ok <- FALSE
     failct <- 0
     while (!ok && failct<maxfail) {
@@ -1813,10 +1837,11 @@ genboot <- function(x,method="cml",
       failct <- 0
  #    while (!ok & failct<maxfail) {
         ## why keep trying here??
-      if (method=="cml")
+      if (method=="cml") {
         fit <- cml(x0)
-      else
+      } else {
         fit <- uml(x0)
+      }
       tmpfit <- unlist(coef(fit))
       ok <- all(!is.na(tmpfit)) & all(tmpfit>=0 & tmpfit<=1)
       if (is.na(ok)) ok <- FALSE  ## double-check
@@ -1836,7 +1861,8 @@ genboot <- function(x,method="cml",
                             -logLik(fit$fit),fit$fit$convergence)
       if (save.boot) boot.data[[i]] <- x0
     }
-  } 
+  }
+  if (pb) close(tpb)
   dimnames(boot.results) <- list(NULL,c(fitnames,"NLL","Convergence"))
   mixstock.est(fit=basefit$fit,data=x,
              resample=boot.results,
@@ -1937,7 +1963,7 @@ write.TO.bugscode = function(fn,MIX) {
     "for(j in 1:R){",
     "for(k in 1:(MIX+1)) {",
     "	div[j,k] <- delta[j,k]/sum(delta[j,])",
-    "	delta[j,k] ~ dgamma(dp[k],1)",
+    "	delta[j,k] ~ dgamma(dp[j,k],1)",
     "}",
     "}",
     "")
@@ -2019,7 +2045,13 @@ mm.wbugs <- function(x,
   maxTm <- max(Tm)
   fp <- sourceprior[1,]  ## haplotype freq prior
   dp <- mixprior
-  dp <- rep(dp,length.out=MIX+1) ## replicate mixed prior if necessary
+  ## following could be done more compactly but maybe clearer this way
+  if (length(dp)==1) {  ## scalar: expand
+    dp <- matrix(dp,nrow=R,ncol=MIX+1)
+  } else if (length(dp)==MIX+1) {  ## single row: expand
+    dp <- matrix(dp,nrow=R,ncol=MIX+1,byrow=TRUE)
+  } else if (!all(dim(dp)==c(R,MIX+1))) stop("prior for source-to-mixed contributions is the wrong shape")
+  ## dp <- rep(dp,length.out=MIX+1) ## replicate mixed prior if necessary
   c(fp,dp) ## codetools kluge
   data <- c(list("Tm",
                  "sourcesamp","sourcesize",
@@ -2204,7 +2236,8 @@ simmixstock2 <- function(sourcefreq, destmat,
                          sourcesize,
                          sourcesampsize, mixsampsize,
                          nmark, nsource, nmix,
-                         rseed = NULL) 
+                         rseed = NULL,
+                         condense = TRUE) 
 {
   nmat <- function(x) { sweep(x,2,colSums(x),"/") }
   if (!is.null(rseed)) 
@@ -2228,7 +2261,9 @@ simmixstock2 <- function(sourcefreq, destmat,
                       n=1, size=mixsampsize)
   dimnames(sourcesamp.r) <- mixstock.dimnames(nmark, nsource)
   dimnames(mixsamp.r) <- list(marker=dimnames(sourcesamp.r)[[1]],mix=paste("M",1:nmix,sep=""))
-  return(mixstock.data(sourcesamp=sourcesamp.r,mixsamp=mixsamp.r))
+  m <- mixstock.data(sourcesamp=sourcesamp.r,mixsamp=mixsamp.r)
+  if (condense) m <- markfreq.condense(m)
+  return(m)
 }
 
 ## code for reading from/writing to Masuda&Pella control files
@@ -2297,9 +2332,9 @@ put.ctl <- function(fn,which=1,tot,ranseed=c(899271,4480026,90092812),
    cat("T T T T\n")
    cat(formatC(1,width=3),
        formatC(H,width=3),
-       format.char("F",width=3,flag="+"),  ## Hardy-Weinberg,
+       formatC("F",width=3,flag="+"),  ## Hardy-Weinberg,
        "  ",
-       format.char("mtDNA",width=18,flag="+"),"\n",sep="")
+       formatC("mtDNA",width=18,flag="+"),"\n",sep="")
    for (i in 1:R) {
      ## FORTRAN format specified: I3,1X,F7.6,2X,A18,1X,F7.6
      ## can't quite match FORTRAN FX.Y format: digits=n always
@@ -2308,7 +2343,7 @@ put.ctl <- function(fn,which=1,tot,ranseed=c(899271,4480026,90092812),
           " ",
           formatC(fprior[i],width=6,digits=5,format="f"),
           "  ",
-          format.char(sourcenames[i],width=18),
+          formatC(sourcenames[i],width=18),
           " ",
           formatC(startval[i],width=6,digits=5,format="f"),
           "\n",
@@ -2461,4 +2496,33 @@ nmark <- function(object) {
   object
 }
 
+## FIXME: define for other data types
+coeftab.mixstock.est <- function(object,clevel=c(0.5,0.95),...)  {
+  ## loc should be a function with an na.rm argument (mean,median)
+  ## FIXME:
+  pvec <- c((1-clevel)/2,(1+clevel)/2)
+  est<- coef(object)$input.freq
+  sd <- rep(NA,length(est))
+  Qvec <- matrix(NA,nrow=length(est),ncol=2*length(clevel),
+                 dimnames=list(names(est),as.character(sort(paste(pvec,"%",sep="")))))
+  if (!is.null(object$resample)) {
+    rr <- object$resample
+    rr <- rr[,!colnames(rr) %in% c("NLL","Convergence")]
+    ## est <- apply(rr,2,loc,na.rm=TRUE)
+    sd <- apply(rr,2,sd,na.rm=TRUE)
+    Qvec <-  t(apply(rr,2,quantile,probs=pvec))
+    Qvec <- Qvec[,order(pvec)]
+  }
+  cc <- cbind(Estimate=est,"Std. Error"=sd,Qvec)
+  rownames(cc) <- gsub("^contrib\\.","",rownames(cc))
+  class(cc) <- "coeftab"
+  cc
+}
 
+## designed for MCMC only
+xyplot.mixstock.est <- function(x,data,...) {
+  ## convert allchains back into an mcmc list
+  require(coda)
+  m <- as.mcmc.list(lapply(split.data.frame(x$resample,x$resample.index),as.mcmc))
+  xyplot(m,...)
+}
