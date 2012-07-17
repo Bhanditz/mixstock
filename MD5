@@ -1,13 +1,6 @@
 0ceaba2ea40a53dc9f541d4ab570ee6b *ChangeLog
-76829bfcb2fa0b32829288a6e5eb13ec *DESCRIPTION
+812fbddf252a3c3a089b64f1b0f5a7b5 *DESCRIPTION
 e3430ad1f287563d758b406d609b7072 *NAMESPACE
-650e14373668e4574242fbba44c744b0 *R/RCS/masuda-pella.R,v
-cc57836d523b98606c232df49b94270f *R/RCS/mixstock.R,v
-eab1ebf10c71175d4bdcb33f710d40f9 *R/RCS/turtle-anal.R,v
-4c98bb2da560970f1b18dc784a2fe7b0 *R/RCS/turtle.R
-50abd9ff8d6a08b776fc2ddc1bddee8d *R/RCS/turtle.R,v
-fc4f73548689521b250f3b5903aee80e *R/RCS/turtle.R.old
-6b0bdd7b1c3e23c90a8993c878e596f5 *R/auto/bugs-ex.el
 a64ae88acd9408765114248cb224b741 *R/mixstock.R
 86f8ecd8a56992de7313d0f30ae10532 *TODO
 b38a4929c10315a389b9a61561bd5c4d *data/bolten98.RData
@@ -16,7 +9,7 @@ b38a4929c10315a389b9a61561bd5c4d *data/bolten98.RData
 5582650531b3995528a63caf316afd3b *data/lahanas98raw.txt.gz
 752e08cd275b6db864e504f0c9fbb07a *data/simex.RData
 57e69712baf687779666da49bb236fe5 *inst/CITATION
-623f2b87a250fcf50e40c735e511ecd3 *inst/NEWS.Rd
+6b9742726d32074c8b50d18985e98948 *inst/NEWS.Rd
 2b9e3807de212bbc8d12bed9b7fbe3df *inst/bugs/manymany.bug
 ad0984ea70594ed6103a5194fe0b2670 *inst/bugs/manymany.txt
 8a478de4ced68e557b62712de60f1d42 *inst/bugs/manymany0.bug
@@ -25,7 +18,7 @@ ae447c3524f26f3c67fe0b08e677c01b *inst/bugs/manymany1.bug
 7f56adc354ec3dbb34b0eccb1f19151a *inst/bugs/pellamasuda.txt
 e87453c89bd4f8cc41ec7fdbe662c8cd *inst/bugs/rooksize.bug
 e49d552cfd6886514e93a70fc12011b9 *inst/doc/mixstock.Rnw
-591bdfec4256942b6b2c7c838dec857a *inst/doc/mixstock.pdf
+f9765b75ddb52d63817a1a0943ed6806 *inst/doc/mixstock.pdf
 6830bba57fa37fc270e812dc2e14f0da *inst/othersrc/turtle-main.c
 941f79e45b921fb202539d1035c0a6c4 *man/AIC.mixstock.est.Rd
 1c5a4655c7b6526a29b4136aa6caea32 *man/BUGS.out.Rd
@@ -84,10 +77,7 @@ a206506f851c7ef4ec0f05f36f34a9d3 *src/utils.h
 2582e3e55c2175544368e56194cd02d7 *tests/mprior.R
 8eaef8883b08da1eadcc59c7a91d1c3f *tests/mprior.Rout
 a4e0e1adf26ac1bc934f374927807e0f *vignettes/GR.RData
-8c1ea7722089e590dea9312065a67cde *vignettes/NEWS.Rd
 dd2c3f30884b0a2c4e9bf6942f7016c3 *vignettes/RL.RData
-eabc8e85df157b9d9114edeeb50a5e02 *vignettes/auto/mixstock.el
-7d5274369e1732089a033d3388a2c73e *vignettes/auto/turtle-vignette.el
 e58eddbcc79312c028c011a2674a5995 *vignettes/data.txt
 8cd767481920f0eb785302dacfc87057 *vignettes/lineno.sty
 62653575dd6bcec9b99338339751e486 *vignettes/mcmc.RData
@@ -100,4 +90,4 @@ bb3db9b6b37cee36f38b5f63b0e63f7d *vignettes/mixstock.blg
 9d7affac6064a5c3c35eb81d6531fad6 *vignettes/nmark.Rd
 d97ccb7dc9b2b4afef02848b5de4c7bf *vignettes/turtle.bib
 3bf9fca77ee29645ec560f64fba9284b *vignettes/umlboot.RData
-3ae68106224426ecc1feca8fba07fbdc *vignettes/wbugs_cache.RData
+71d671df2004e0a64d49e7cbe5a89284 *vignettes/wbugs_cache.RData
